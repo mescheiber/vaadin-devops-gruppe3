@@ -8,28 +8,91 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class AuthService {
+
     private static final AuthService instance = new AuthService();
     private final Map<String, User> users = new HashMap<>();
+    private User angemeldeterBenutzer;
 
     public static AuthService getInstance() {
         return instance;
     }
 
+    // Konstruktor lädt vorhandene Daten (falls vorhanden)
+    private AuthService() {
+        users.put("admin", new User("admin", "admin123", User.Role.ADMIN));
+        PersistenzService.Speicherbild data = PersistenzService.laden();
+        if (data != null && data.users != null) {
+            data.users.forEach(user -> users.put(user.getUsername(), user));
+        }
+    }
+
     public boolean register(String username, String password, User.Role role) {
-        if (users.containsKey(username)) return false;
+        if (users.containsKey(username)) {
+            return false;
+        }
         users.put(username, new User(username, password, role));
+        // Speichern nach erfolgreicher Registrierung
+        PersistenzService.speichern(
+                getAllUsers(),
+                VeranstaltungsService.getInstance().getAlleVeranstaltungen(),
+                KlassenService.getInstance().getAlle()
+        );
+
         return true;
     }
 
     public User login(String username, String password) {
         User u = users.get(username);
-        return (u != null && u.getPassword().equals(password)) ? u : null;
+        if (u != null && u.getPassword().equals(password)) {
+            angemeldeterBenutzer = u; // <== merken!
+            return u;
+        }
+        return null;
     }
 
     public List<String> getAlleBenutzernamen(User.Role rolle) {
         return users.values().stream()
-            .filter(u -> u.getRole() == rolle)
-            .map(User::getUsername)
-            .collect(Collectors.toList());
+                .filter(u -> u.getRole() == rolle)
+                .map(User::getUsername)
+                .collect(Collectors.toList());
     }
+
+    // Neue Methode für JSON-Speicherung
+    public List<User> getAllUsers() {
+        return users.values().stream().toList();
+    }
+
+    public void setAll(List<User> userListe) {
+        users.clear();
+        if (userListe != null) {
+            for (User u : userListe) {
+                users.put(u.getUsername(), u);
+            }
+        }
+
+        // Admin-User nachladen, falls gelöscht
+        if (!users.containsKey("admin")) {
+            users.put("admin", new User("admin", "admin123", User.Role.ADMIN));
+        }
+    }
+
+    public User getAngemeldeterBenutzer;
+    
+    public void setAngemeldeterBenutzer(User user) {
+    this.angemeldeterBenutzer = user;
+}
+
+public User getAngemeldeterBenutzer() {
+    return this.angemeldeterBenutzer;
+}
+
+    public void logout() {
+        angemeldeterBenutzer = null;
+    }
+    
+    public User getUserByName(String username) {
+    return users.get(username);
+}
+
+
 }

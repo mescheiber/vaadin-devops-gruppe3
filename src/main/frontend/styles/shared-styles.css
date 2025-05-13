@@ -1,0 +1,14 @@
+.header {
+    background-color: #e3f2fd;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    align-items: center;
+    gap: 1em;
+    padding: 0.6em 1em;
+}
+
+.logo {
+    color: #0d47a1;
+    font-size: 1.6em;
+    font-weight: bold;
+    text-decoration: none;
+}

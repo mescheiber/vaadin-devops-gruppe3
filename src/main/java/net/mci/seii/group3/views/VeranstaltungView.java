@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@Route("veranstaltung/:id")
+@Route(value = "veranstaltung/:id", layout = MainLayout.class)
 public class VeranstaltungView extends VerticalLayout implements BeforeEnterObserver {
 
     private Veranstaltung veranstaltung;

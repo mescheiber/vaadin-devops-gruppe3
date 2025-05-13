@@ -14,7 +14,7 @@ import net.mci.seii.group3.service.VeranstaltungsService;
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Route("student")
+@Route(value = "student", layout = MainLayout.class)
 public class StudentenView extends VerticalLayout implements AfterNavigationObserver {
 
     public StudentenView() {

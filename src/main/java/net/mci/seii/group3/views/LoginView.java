@@ -10,7 +10,7 @@ import com.vaadin.flow.server.VaadinSession;
 import net.mci.seii.group3.model.User;
 import net.mci.seii.group3.service.AuthService;
 
-@Route("")
+@Route(value = "", layout = MainLayout.class)
 public class LoginView extends VerticalLayout {
 
     public LoginView() {
@@ -20,22 +20,22 @@ public class LoginView extends VerticalLayout {
 
         Button login = new Button("Login", e -> {
             User user = AuthService.getInstance().login(username.getValue(), password.getValue());
+
             if (user != null) {
                 VaadinSession.getCurrent().setAttribute(User.class, user);
-                if (user.getRole() == User.Role.TEACHER) {
-                    getUI().ifPresent(ui -> ui.navigate("lehrer"));
-                } else {
-                    getUI().ifPresent(ui -> ui.navigate("student"));
+                AuthService.getInstance().setAngemeldeterBenutzer(user); // richtig
+
+
+                switch (user.getRole()) {
+                    case ADMIN -> getUI().ifPresent(ui -> ui.navigate("admin"));
+                    case TEACHER -> getUI().ifPresent(ui -> ui.navigate("lehrer"));
+                    case STUDENT -> getUI().ifPresent(ui -> ui.navigate("student"));
                 }
             } else {
                 status.setText("Login fehlgeschlagen");
             }
         });
 
-        Button register = new Button("Registrieren", e -> {
-            getUI().ifPresent(ui -> ui.navigate("register"));
-        });
-
-        add(username, password, login, register, status);
+        add(username, password, login, status);
     }
 }

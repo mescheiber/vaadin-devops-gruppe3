@@ -1,0 +1,47 @@
+{
+  "users" : [ {
+    "username" : "Axel",
+    "password" : "123",
+    "role" : "STUDENT"
+  }, {
+    "username" : "Ramona",
+    "password" : "123",
+    "role" : "STUDENT"
+  }, {
+    "username" : "Wegita",
+    "password" : "123",
+    "role" : "STUDENT"
+  }, {
+    "username" : "admin",
+    "password" : "admin123",
+    "role" : "ADMIN"
+  }, {
+    "username" : "Andreas",
+    "password" : "123",
+    "role" : "TEACHER"
+  }, {
+    "username" : "Hans",
+    "password" : "123",
+    "role" : "STUDENT"
+  } ],
+  "veranstaltungen" : [ {
+    "id" : "7bad6713-f498-47b6-873d-c8a272a9b1d9",
+    "name" : "LV1",
+    "lehrer" : "Andreas",
+    "kennwort" : "A4BDB8",
+    "startzeit" : "2025-05-13T20:00:00",
+    "teilnehmer" : [ ],
+    "teilnahmen" : { }
+  }, {
+    "id" : "4db3bfdf-0b94-4612-91d4-74e68e71122f",
+    "name" : "BigDate2",
+    "lehrer" : "Andreas",
+    "kennwort" : "C680BE",
+    "startzeit" : "2025-05-16T19:00:00",
+    "teilnehmer" : [ "Ramona", "Wegi" ],
+    "teilnahmen" : { }
+  } ],
+  "klassen" : {
+    "1234" : [ "Ramona" ]
+  }
+}

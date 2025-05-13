@@ -10,7 +10,7 @@ import com.vaadin.flow.router.Route;
 import net.mci.seii.group3.model.User;
 import net.mci.seii.group3.service.AuthService;
 
-@Route("register")
+@Route(value = "register", layout = MainLayout.class)
 public class RegisterView extends VerticalLayout {
 
     public RegisterView() {

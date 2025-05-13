@@ -1,73 +1,58 @@
 package net.mci.seii.group3.views;
 
-import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.datetimepicker.DateTimePicker;
 import com.vaadin.flow.component.grid.Grid;
-import com.vaadin.flow.component.listbox.MultiSelectListBox;
-import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.component.datetimepicker.DateTimePicker;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.server.VaadinSession;
-import net.mci.seii.group3.model.User;
 import net.mci.seii.group3.model.Veranstaltung;
 import net.mci.seii.group3.service.AuthService;
+import net.mci.seii.group3.service.KlassenService;
+import net.mci.seii.group3.service.PersistenzService;
 import net.mci.seii.group3.service.VeranstaltungsService;
 
-import java.time.LocalDateTime;
-import java.util.List;
 
-@Route("lehrer")
+@Route(value = "lehrer", layout = MainLayout.class)
 public class LehrerView extends VerticalLayout {
 
+    private final Grid<Veranstaltung> grid;
+
     public LehrerView() {
-        User lehrer = (User) VaadinSession.getCurrent().getAttribute(User.class);
-        if (lehrer == null || lehrer.getRole() != User.Role.TEACHER) {
-            getUI().ifPresent(ui -> ui.navigate(""));
-            return;
-        }
+        setPadding(true);
+        setSpacing(true);
 
-        TextField name = new TextField("Veranstaltungsname");
-        DateTimePicker zeit = new DateTimePicker("Startzeit");
-        Button erstellen = new Button("Veranstaltung erstellen", e -> {
-            if (name.isEmpty() || zeit.isEmpty()) {
-                Notification.show("Bitte Name und Startzeit angeben!");
-                return;
-            }
-            VeranstaltungsService.getInstance().createVeranstaltung(name.getValue(), lehrer.getUsername(), zeit.getValue());
-            getUI().ifPresent(ui -> ui.getPage().reload());
-        });
+        String lehrer = AuthService.getInstance().getAngemeldeterBenutzer().getUsername();
 
-        Grid<Veranstaltung> grid = new Grid<>(Veranstaltung.class, false);
-        grid.addColumn(Veranstaltung::getName).setHeader("Veranstaltung");
+        // Grid initialisieren, bevor es verwendet wird!
+        grid = new Grid<>(Veranstaltung.class, false);
+        grid.addColumn(Veranstaltung::getName).setHeader("Name");
         grid.addColumn(v -> v.getStartzeit().toString()).setHeader("Startzeit");
         grid.addColumn(Veranstaltung::getKennwort).setHeader("Kennwort");
+        grid.addColumn(v -> v.getTeilnehmer().size()).setHeader("Teilnehmeranzahl");
 
-        MultiSelectListBox<String> studentenListe = new MultiSelectListBox<>();
-        List<String> alleStudenten = AuthService.getInstance().getAlleBenutzernamen(User.Role.STUDENT);
-        studentenListe.setItems(alleStudenten);
+        grid.setItems(VeranstaltungsService.getInstance().getVeranstaltungenFürLehrer(lehrer));
 
-        Button zuweisen = new Button("Zuweisen", e -> {
-            Veranstaltung v = grid.asSingleSelect().getValue();
-            if (v != null) {
-                studentenListe.getSelectedItems().forEach(student ->
-                    VeranstaltungsService.getInstance().teilnehmerZuweisen(v.getId(), student)
-                );
-                Notification.show("Studenten zugewiesen.");
-                getUI().ifPresent(ui -> ui.getPage().reload());
+        TextField nameField = new TextField("Veranstaltungsname");
+        DateTimePicker startzeit = new DateTimePicker("Startzeit");
+        TextField klasseFeld = new TextField("Klasse zuweisen");
+
+        Button erstellen = new Button("Veranstaltung anlegen", e -> {
+            if (!nameField.isEmpty() && startzeit.getValue() != null) {
+                Veranstaltung v = VeranstaltungsService.getInstance()
+                        .createVeranstaltung(nameField.getValue(), lehrer, startzeit.getValue());
+
+                if (!klasseFeld.isEmpty()) {
+                    KlassenService.getInstance()
+                            .getSchuelerEinerKlasse(klasseFeld.getValue())
+                            .forEach(s -> VeranstaltungsService.getInstance().teilnehmerZuweisen(v.getId(), s));
+                }
+
+                PersistenzService.speichernAlles();
+                grid.setItems(VeranstaltungsService.getInstance().getVeranstaltungenFürLehrer(lehrer));
             }
         });
 
-        grid.setItems(VeranstaltungsService.getInstance().getVeranstaltungenFürLehrer(lehrer.getUsername()));
-
-        // Richtige Platzierung des Click-Listeners
-        grid.asSingleSelect().addValueChangeListener(e -> {
-            if (e.getValue() != null) {
-                UI.getCurrent().navigate("veranstaltung/" + e.getValue().getId());
-            }
-        });
-
-        add(name, zeit, erstellen, grid, studentenListe, zuweisen);
+        add(nameField, startzeit, klasseFeld, erstellen, grid);
     }
 }
