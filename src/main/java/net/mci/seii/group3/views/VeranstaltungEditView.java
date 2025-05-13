@@ -1,85 +1,149 @@
 package net.mci.seii.group3.views;
 
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.datetimepicker.DateTimePicker;
 import com.vaadin.flow.component.grid.Grid;
-import com.vaadin.flow.component.html.H2;
+import com.vaadin.flow.component.html.Anchor;
+import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.listbox.MultiSelectListBox;
 import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.*;
+import com.vaadin.flow.server.StreamResource;
+import com.vaadin.flow.server.VaadinSession;
 import net.mci.seii.group3.model.User;
 import net.mci.seii.group3.model.Veranstaltung;
 import net.mci.seii.group3.service.AuthService;
-import net.mci.seii.group3.service.KlassenService;
 import net.mci.seii.group3.service.PersistenzService;
 import net.mci.seii.group3.service.VeranstaltungsService;
+import net.mci.seii.group3.utils.PdfExportService;
 
+import java.io.ByteArrayInputStream;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
-@Route("admin/veranstaltungen/edit/:id")
+@Route(value = "veranstaltung-edit/:id", layout = MainLayout.class)
 public class VeranstaltungEditView extends VerticalLayout implements BeforeEnterObserver {
 
     private Veranstaltung veranstaltung;
-    private final Grid<String> teilnehmerGrid = new Grid<>();
-
-    private final ComboBox<String> userBox = new ComboBox<>("Student hinzufügen");
-    private final ComboBox<String> klasseBox = new ComboBox<>("Klasse hinzufügen");
-
-    public VeranstaltungEditView() {
-        setSpacing(true);
-        setPadding(true);
-
-        add(new H2("Veranstaltung bearbeiten"));
-
-        // Teilnehmer-Grid
-        teilnehmerGrid.addColumn(String::toString).setHeader("Teilnehmer");
-
-        // Buttons
-        Button hinzufuegenUser = new Button("Benutzer zuweisen", e -> {
-            if (veranstaltung != null && userBox.getValue() != null) {
-                veranstaltung.getTeilnehmer().add(userBox.getValue());
-                aktualisieren();
-            }
-        });
-
-        Button hinzufuegenKlasse = new Button("Klasse zuweisen", e -> {
-            if (veranstaltung != null && klasseBox.getValue() != null) {
-                Set<String> schueler = KlassenService.getInstance().getSchuelerEinerKlasse(klasseBox.getValue());
-                veranstaltung.getTeilnehmer().addAll(schueler);
-                aktualisieren();
-            }
-        });
-
-        Button zurück = new Button("Zurück", e ->
-            getUI().ifPresent(ui -> ui.navigate("admin/veranstaltungen"))
-        );
-
-        add(
-            new HorizontalLayout(userBox, hinzufuegenUser),
-            new HorizontalLayout(klasseBox, hinzufuegenKlasse),
-            teilnehmerGrid,
-            zurück
-        );
-    }
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
         String id = event.getRouteParameters().get("id").orElse(null);
-        veranstaltung = VeranstaltungsService.getInstance().getVeranstaltungById(id);
-        if (veranstaltung == null) {
-            Notification.show("Veranstaltung nicht gefunden");
-            getUI().ifPresent(ui -> ui.navigate("admin/veranstaltungen"));
+        User currentUser = (User) VaadinSession.getCurrent().getAttribute(User.class);
+
+        veranstaltung = VeranstaltungsService.getInstance()
+            .getAlleVeranstaltungen().stream()
+            .filter(v -> v.getId().equals(id))
+            .findFirst().orElse(null);
+
+        if (veranstaltung == null || currentUser == null) {
+            event.forwardTo("");
             return;
         }
 
-        userBox.setItems(AuthService.getInstance().getAlleBenutzernamen(User.Role.STUDENT));
-        klasseBox.setItems(KlassenService.getInstance().getAllKlassenNamen());
-        aktualisieren();
-    }
+        add(new Span("Veranstaltung: " + veranstaltung.getName()));
+        add(new Span("Startzeit: " + veranstaltung.getStartzeit()));
 
-    private void aktualisieren() {
-        teilnehmerGrid.setItems(veranstaltung.getTeilnehmer());
-        PersistenzService.speichernAlles();
+        Button back = new Button("Zurück", e -> {
+            if (currentUser.getRole() == User.Role.TEACHER) {
+                UI.getCurrent().navigate("lehrer");
+            } else {
+                UI.getCurrent().navigate("student");
+            }
+        });
+        add(back);
+
+        // === STUDENT ===
+        if (currentUser.getRole() == User.Role.STUDENT) {
+            if (!veranstaltung.getTeilnahmen().containsKey(currentUser.getUsername())) {
+                TextField kennwort = new TextField("Kennwort");
+                Button teilnehmen = new Button("Teilnehmen", e -> {
+                    boolean erlaubt = VeranstaltungsService.getInstance().prüfenTeilnahme(
+                        veranstaltung.getId(), kennwort.getValue(), currentUser.getUsername()
+                    );
+                    if (erlaubt) {
+                        Notification.show("Teilnahme erfolgreich!");
+                        UI.getCurrent().navigate("student");
+                    } else {
+                        Notification.show("Teilnahme nicht möglich.");
+                    }
+                });
+                add(kennwort, teilnehmen);
+            } else {
+                Notification.show("Du hast bereits teilgenommen.");
+                UI.getCurrent().navigate("student");
+            }
+        }
+
+        // === TEACHER ===
+        if (currentUser.getRole() == User.Role.TEACHER) {
+
+            // Editfelder für Lehrer
+            TextField nameField = new TextField("Titel", veranstaltung.getName());
+            DateTimePicker startzeitField = new DateTimePicker("Startzeit", veranstaltung.getStartzeit());
+
+            Button speichern = new Button("Speichern", e -> {
+                veranstaltung.setName(nameField.getValue());
+                veranstaltung.setStartzeit(startzeitField.getValue());
+                PersistenzService.speichernAlles();
+                Notification.show("Gespeichert.");
+            });
+
+            add(nameField, startzeitField, speichern);
+
+            // Teilnehmerliste mit Status
+            add(new Span("Zugewiesene Studenten:"));
+            Grid<String> teilnehmerGrid = new Grid<>();
+            teilnehmerGrid.addColumn(name -> name).setHeader("Name");
+            teilnehmerGrid.addColumn(name -> {
+                LocalDateTime t = veranstaltung.getTeilnahmen().get(name);
+                return (t != null) ? "✓ " + t.toString() : "⏳ offen";
+            }).setHeader("Teilnahme");
+            teilnehmerGrid.setItems(veranstaltung.getTeilnehmer());
+            add(teilnehmerGrid);
+
+            // PDF Export
+            Button pdfExport = new Button("Als PDF exportieren", e -> {
+                try {
+                    byte[] pdf = PdfExportService.erzeugePdf(veranstaltung);
+                    StreamResource res = new StreamResource("teilnehmerliste.pdf", () -> new ByteArrayInputStream(pdf));
+                    Anchor download = new Anchor(res, "PDF herunterladen");
+                    download.getElement().setAttribute("download", true);
+                    add(download);
+                } catch (Exception ex) {
+                    Notification.show("Fehler beim PDF-Export: " + ex.getMessage());
+                }
+            });
+            add(pdfExport);
+
+            // Neue Studenten zuweisen
+            add(new Span("Neue Studenten zuweisen:"));
+            List<String> alleStudenten = AuthService.getInstance().getAlleBenutzernamen(User.Role.STUDENT);
+            Set<String> bereitsZugewiesen = veranstaltung.getTeilnehmer();
+            List<String> verfügbareStudenten = alleStudenten.stream()
+                .filter(name -> !bereitsZugewiesen.contains(name))
+                .collect(Collectors.toList());
+
+            MultiSelectListBox<String> studentenListe = new MultiSelectListBox<>();
+            studentenListe.setItems(verfügbareStudenten);
+
+            Button alleAuswählen = new Button("Alle auswählen", e -> studentenListe.select(verfügbareStudenten));
+
+            Button zuweisen = new Button("Zuweisen", e -> {
+                studentenListe.getSelectedItems().forEach(student ->
+                    VeranstaltungsService.getInstance().teilnehmerZuweisen(veranstaltung.getId(), student)
+                );
+                PersistenzService.speichernAlles();
+                Notification.show(studentenListe.getSelectedItems().size() + " Studenten zugewiesen.");
+                UI.getCurrent().navigate("veranstaltung-edit/" + veranstaltung.getId());
+            });
+
+            add(studentenListe, alleAuswählen, zuweisen);
+        }
     }
 }

@@ -6,14 +6,13 @@ public class KlassenService {
 
     private static final KlassenService instance = new KlassenService();
     private final Map<String, Set<String>> klassen = new HashMap<>();
-    
-    public void setAlleKlassen(Map<String, Set<String>> neueKlassen) {
-    klassen.clear();
-    if (neueKlassen != null) {
-        klassen.putAll(neueKlassen);
-    }
-}
 
+    public void setAlleKlassen(Map<String, Set<String>> neueKlassen) {
+        klassen.clear();
+        if (neueKlassen != null) {
+            klassen.putAll(neueKlassen);
+        }
+    }
 
     public static KlassenService getInstance() {
         return instance;
@@ -45,27 +44,25 @@ public class KlassenService {
         klassen.clear();
         klassen.putAll(daten);
     }
-    
+
     public void removeBenutzerAusAllenKlassen(String benutzername) {
-    klassen.values().forEach(s -> s.remove(benutzername));
-}
+        klassen.values().forEach(s -> s.remove(benutzername));
+    }
 
-public String getKlasseVonSchueler(String benutzername) {
-    return klassen.entrySet().stream()
-        .filter(e -> e.getValue().contains(benutzername))
-        .map(Map.Entry::getKey)
-        .findFirst()
-        .orElse(null);
-}
+    public String getKlasseVonSchueler(String benutzername) {
+        return klassen.entrySet().stream()
+                .filter(e -> e.getValue().contains(benutzername))
+                .map(Map.Entry::getKey)
+                .findFirst()
+                .orElse(null);
+    }
 
-public void aktualisiereBenutzername(String alterName, String neuerName) {
-    for (Set<String> schueler : klassen.values()) {
-        if (schueler.remove(alterName)) {
-            schueler.add(neuerName);
+    public void aktualisiereBenutzername(String alterName, String neuerName) {
+        for (Set<String> schueler : klassen.values()) {
+            if (schueler.remove(alterName)) {
+                schueler.add(neuerName);
+            }
         }
     }
-}
-
-
 
 }

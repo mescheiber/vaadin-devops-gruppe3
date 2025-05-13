@@ -8,11 +8,25 @@ import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.server.VaadinSession;
 import net.mci.seii.group3.model.User;
+import net.mci.seii.group3.service.*;
 
 @CssImport("./styles/shared-styles.css")
 public class MainLayout extends AppLayout {
 
+    private static boolean datenBereitsGeladen = false;
+
     public MainLayout() {
+        // Initial-Laden der Daten beim ersten Aufruf
+        if (!datenBereitsGeladen) {
+            var daten = PersistenzService.laden();
+            if (daten != null) {
+                AuthService.getInstance().setAll(daten.users);
+                VeranstaltungsService.getInstance().setAll(daten.veranstaltungen);
+                KlassenService.getInstance().setAlleKlassen(daten.klassen);
+            }
+            datenBereitsGeladen = true;
+        }
+
         createHeader();
     }
 
@@ -25,10 +39,11 @@ public class MainLayout extends AppLayout {
         Button backButton = new Button("Zurück", event -> {
             User user = (User) VaadinSession.getCurrent().getAttribute(User.class);
             if (user != null) {
-                if (user.getRole() == User.Role.TEACHER) {
-                    UI.getCurrent().navigate("lehrer");
-                } else {
-                    UI.getCurrent().navigate("student");
+                switch (user.getRole()) {
+                    case ADMIN -> UI.getCurrent().navigate("admin");
+                    case TEACHER -> UI.getCurrent().navigate("lehrer");
+                    case STUDENT -> UI.getCurrent().navigate("student");
+                    default -> UI.getCurrent().navigate("");
                 }
             } else {
                 UI.getCurrent().navigate("");
@@ -38,7 +53,7 @@ public class MainLayout extends AppLayout {
         // Logout
         Button logout = new Button("Logout", event -> {
             VaadinSession.getCurrent().setAttribute(User.class, null);
-            UI.getCurrent().navigate("login");
+            UI.getCurrent().navigate("");
         });
 
         HorizontalLayout header = new HorizontalLayout(logo, backButton, logout);

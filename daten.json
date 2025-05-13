@@ -8,7 +8,7 @@
     "password" : "123",
     "role" : "STUDENT"
   }, {
-    "username" : "Wegita",
+    "username" : "Wegi",
     "password" : "123",
     "role" : "STUDENT"
   }, {
@@ -42,6 +42,8 @@
     "teilnahmen" : { }
   } ],
   "klassen" : {
-    "1234" : [ "Ramona" ]
+    "1234" : [ ],
+    "DIBSE2023" : [ "Ramona", "Wegi" ],
+    "DIBSE2024" : [ "Axel", "Hans" ]
   }
 }
