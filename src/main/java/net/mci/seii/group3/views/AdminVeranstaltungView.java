@@ -50,27 +50,28 @@ public class AdminVeranstaltungView extends VerticalLayout {
 
         veranstaltungenGrid.addColumn(Veranstaltung::getName).setHeader("Titel");
         veranstaltungenGrid.addColumn(Veranstaltung::getLehrer).setHeader("Lehrer");
+        veranstaltungenGrid.addColumn(Veranstaltung::getKennwort).setHeader("Kennwort");
         veranstaltungenGrid.addColumn(v -> v.getStartzeit().toString()).setHeader("Startzeit");
         veranstaltungenGrid.addColumn(v -> v.getTeilnehmer().size()).setHeader("Teilnehmer");
 
         veranstaltungenGrid.asSingleSelect().addValueChangeListener(e -> {
             Veranstaltung v = e.getValue();
             if (v != null) {
-                getUI().ifPresent(ui -> ui.navigate("admin/veranstaltungen/edit/" + v.getId()));
+                getUI().ifPresent(ui -> ui.navigate("veranstaltung/" + v.getId()));
             }
         });
 
         refreshGrid();
 
-        Button zurück = new Button("Zurück", e ->
-                getUI().ifPresent(ui -> ui.navigate("admin"))
+        Button zurück = new Button("Zurück", e
+                -> getUI().ifPresent(ui -> ui.navigate("admin"))
         );
 
         add(
-            new H3("Veranstaltungsverwaltung"),
-            new HorizontalLayout(name, lehrerBox, startzeit, erstellen),
-            veranstaltungenGrid,
-            zurück
+                new H3("Veranstaltungsverwaltung"),
+                new HorizontalLayout(name, lehrerBox, startzeit, erstellen),
+                veranstaltungenGrid,
+                zurück
         );
     }
 

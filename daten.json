@@ -16,22 +16,51 @@
     "password" : "admin123",
     "role" : "ADMIN"
   }, {
-    "username" : "Andreas",
+    "username" : "Matthias",
     "password" : "123",
     "role" : "TEACHER"
   }, {
     "username" : "Hans",
     "password" : "123",
     "role" : "STUDENT"
+  }, {
+    "username" : "Daniela",
+    "password" : "123",
+    "role" : "STUDENT"
+  }, {
+    "username" : "Andrea",
+    "password" : "123",
+    "role" : "TEACHER"
   } ],
   "veranstaltungen" : [ {
+    "id" : "4c6563ca-eee2-4705-a85b-e63fe7c35673",
+    "name" : "BigData3",
+    "lehrer" : "Andrea",
+    "kennwort" : "323AD4",
+    "startzeit" : "2025-05-16T23:30:00",
+    "teilnehmer" : [ "Ramona", "Wegi", "Daniela" ],
+    "teilnahmen" : {
+      "Ramona" : "2025-05-16T22:30:14.8037118"
+    },
+    "zugewieseneLehrer" : [ "Matthias", "Andrea" ]
+  }, {
+    "id" : "d7191df4-08bc-4958-bf3a-d84ec00ea16c",
+    "name" : "LV3",
+    "lehrer" : "Andrea",
+    "kennwort" : "C4BFE6",
+    "startzeit" : "2025-05-15T21:00:00",
+    "teilnehmer" : [ ],
+    "teilnahmen" : { },
+    "zugewieseneLehrer" : [ "Andrea" ]
+  }, {
     "id" : "7bad6713-f498-47b6-873d-c8a272a9b1d9",
     "name" : "LV1",
     "lehrer" : "Andreas",
     "kennwort" : "A4BDB8",
     "startzeit" : "2025-05-13T20:00:00",
     "teilnehmer" : [ ],
-    "teilnahmen" : { }
+    "teilnahmen" : { },
+    "zugewieseneLehrer" : [ ]
   }, {
     "id" : "4db3bfdf-0b94-4612-91d4-74e68e71122f",
     "name" : "BigDate2",
@@ -39,11 +68,13 @@
     "kennwort" : "C680BE",
     "startzeit" : "2025-05-16T19:00:00",
     "teilnehmer" : [ "Ramona", "Wegi" ],
-    "teilnahmen" : { }
+    "teilnahmen" : { },
+    "zugewieseneLehrer" : [ ]
   } ],
   "klassen" : {
-    "1234" : [ ],
-    "DIBSE2023" : [ "Ramona", "Wegi" ],
-    "DIBSE2024" : [ "Axel", "Hans" ]
+    "DIBSE2023" : [ "Ramona", "Wegi", "Daniela" ],
+    "DIBSE2024" : [ "Axel", "Hans" ],
+    "DIBSE2025" : [ ],
+    "1234" : [ ]
   }
 }

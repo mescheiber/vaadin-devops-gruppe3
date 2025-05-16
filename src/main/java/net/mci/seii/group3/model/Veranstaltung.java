@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 public class Veranstaltung {
+
     private String id;
     private String name;
     private String lehrer;
@@ -29,7 +30,6 @@ public class Veranstaltung {
     }
 
     // Getter
-
     public String getId() {
         return id;
     }
@@ -59,7 +59,6 @@ public class Veranstaltung {
     }
 
     // Setter
-
     public void setId(String id) {
         this.id = id;
     }
@@ -87,4 +86,11 @@ public class Veranstaltung {
     public void setTeilnahmen(Map<String, LocalDateTime> teilnahmen) {
         this.teilnahmen = teilnahmen;
     }
+
+    private Set<String> zugewieseneLehrer = new HashSet<>();
+
+    public Set<String> getZugewieseneLehrer() {
+        return zugewieseneLehrer;
+    }
+
 }
