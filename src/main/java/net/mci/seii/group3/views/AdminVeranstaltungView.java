@@ -36,18 +36,15 @@ public class AdminVeranstaltungView extends VerticalLayout {
         // Eingabefelder mit Placeholder
         TextField name = new TextField();
         name.setPlaceholder("Veranstaltungsname");
-        name.setWidth("200px");
-        name.setHeight("40px");
+        name.addClassName("form-field");
 
         ComboBox<String> lehrerBox = new ComboBox<>();
         lehrerBox.setPlaceholder("Lehrer");
         lehrerBox.setItems(AuthService.getInstance().getAlleBenutzernamen(User.Role.TEACHER));
-        lehrerBox.setWidth("200px");
-        lehrerBox.setHeight("40px");
+        lehrerBox.addClassName("form-field");
 
         DateTimePicker startzeit = new DateTimePicker(); // Kein setPlaceholder möglich
-        startzeit.setWidth("250px");
-        startzeit.setHeight("40px");
+        startzeit.addClassNames("form-field", "form-wide");
 
         // Button zum Anlegen
         Button erstellen = new Button("Veranstaltung anlegen", e -> {
