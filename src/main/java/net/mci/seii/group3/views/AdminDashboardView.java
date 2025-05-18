@@ -14,14 +14,17 @@ public class AdminDashboardView extends VerticalLayout {
         Button benutzer = new Button("Benutzerverwaltung", e ->
             getUI().ifPresent(ui -> ui.navigate("admin/benutzer"))
         );
+        benutzer.addClassName("button");
 
         Button klassen = new Button("Klassenverwaltung", e ->
             getUI().ifPresent(ui -> ui.navigate("admin/klassen"))
         );
+        klassen.addClassName("button");
 
         Button veranstaltungen = new Button("Veranstaltungsverwaltung", e ->
             getUI().ifPresent(ui -> ui.navigate("admin/veranstaltungen"))
         );
+        veranstaltungen.addClassName("button");
 
         add(benutzer, klassen, veranstaltungen);
     }

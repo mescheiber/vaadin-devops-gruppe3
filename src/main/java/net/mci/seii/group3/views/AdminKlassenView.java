@@ -18,6 +18,7 @@ public class AdminKlassenView extends VerticalLayout {
 
     private final Grid<String> schuelerGrid = new Grid<>();
 
+
     public AdminKlassenView() {
         setPadding(true);
         setSpacing(true);
@@ -26,6 +27,7 @@ public class AdminKlassenView extends VerticalLayout {
         Grid<String> klassenGrid = new Grid<>();
         klassenGrid.addColumn(String::toString).setHeader("Klassen");
         klassenGrid.setItems(KlassenService.getInstance().getAllKlassenNamen());
+        klassenGrid.addClassName("grid");
 
         // Auswahl + Anzeige Schüler einer Klasse
         ComboBox<String> klassenAuswahl = new ComboBox<>("Klasse auswählen");
@@ -38,7 +40,10 @@ public class AdminKlassenView extends VerticalLayout {
         schuelerGrid.addColumn(String::toString).setHeader("Zugewiesene Schüler");
 
         // Neue Klasse hinzufügen
-        TextField neueKlasse = new TextField("Neue Klasse");
+        TextField neueKlasse = new TextField();
+        neueKlasse.setPlaceholder("Neue Klasse");
+        neueKlasse.setWidth("250px");
+        neueKlasse.setHeight("40px");
         Button add = new Button("Klasse erstellen", e -> {
             if (!neueKlasse.isEmpty()) {
                 KlassenService.getInstance().addKlasse(neueKlasse.getValue().trim());
@@ -47,17 +52,29 @@ public class AdminKlassenView extends VerticalLayout {
                 refreshGrids(klassenGrid, klassenAuswahl);
             }
         });
+        add.setHeight("40px");
+        add.addClassName("button");
 
         // Zurück zur Admin-Startseite
         Button zurück = new Button("Zurück", e ->
                 getUI().ifPresent(ui -> ui.navigate("admin"))
         );
+        zurück.setHeight("40px");
+        zurück.addClassName("button");
 
-        add(new H3("Klassenverwaltung"),
-            new HorizontalLayout(neueKlasse, add, zurück),
-            klassenGrid,
-            klassenAuswahl,
-            schuelerGrid
+        HorizontalLayout aktionLayout = new HorizontalLayout(neueKlasse, add, zurück);
+        aktionLayout.setAlignItems(Alignment.BASELINE);
+        aktionLayout.setSpacing(true);
+
+        H3 ueberschrift = new H3("Klassenverwaltung");
+        ueberschrift.addClassName("title");
+
+        add(
+                ueberschrift,
+                aktionLayout,
+                klassenGrid,
+                klassenAuswahl,
+                schuelerGrid
         );
     }
 
