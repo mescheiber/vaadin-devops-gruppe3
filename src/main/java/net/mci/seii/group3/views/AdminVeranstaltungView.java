@@ -27,12 +27,29 @@ public class AdminVeranstaltungView extends VerticalLayout {
         setPadding(true);
         setSpacing(true);
 
-        TextField name = new TextField("Veranstaltungsname");
-        ComboBox<String> lehrerBox = new ComboBox<>("Lehrer");
+        veranstaltungenGrid.addClassName("grid");
+
+        // Titel
+        H3 ueberschrift = new H3("Veranstaltungsverwaltung");
+        ueberschrift.addClassName("title");
+
+        // Eingabefelder mit Placeholder
+        TextField name = new TextField();
+        name.setPlaceholder("Veranstaltungsname");
+        name.setWidth("200px");
+        name.setHeight("40px");
+
+        ComboBox<String> lehrerBox = new ComboBox<>();
+        lehrerBox.setPlaceholder("Lehrer");
         lehrerBox.setItems(AuthService.getInstance().getAlleBenutzernamen(User.Role.TEACHER));
+        lehrerBox.setWidth("200px");
+        lehrerBox.setHeight("40px");
 
-        DateTimePicker startzeit = new DateTimePicker("Startzeit");
+        DateTimePicker startzeit = new DateTimePicker(); // Kein setPlaceholder möglich
+        startzeit.setWidth("250px");
+        startzeit.setHeight("40px");
 
+        // Button zum Anlegen
         Button erstellen = new Button("Veranstaltung anlegen", e -> {
             if (!name.isEmpty() && lehrerBox.getValue() != null && startzeit.getValue() != null) {
                 VeranstaltungsService.getInstance()
@@ -47,7 +64,15 @@ public class AdminVeranstaltungView extends VerticalLayout {
                 Notification.show("Bitte alle Felder ausfüllen");
             }
         });
+        erstellen.setHeight("40px");
+        erstellen.addClassName("button");
 
+        // Horizontales Formularlayout
+        HorizontalLayout formularLayout = new HorizontalLayout(name, lehrerBox, startzeit, erstellen);
+        formularLayout.setAlignItems(Alignment.BASELINE);
+        formularLayout.setSpacing(true);
+
+        // Tabelle für bestehende Veranstaltungen
         veranstaltungenGrid.addColumn(Veranstaltung::getName).setHeader("Titel");
         veranstaltungenGrid.addColumn(Veranstaltung::getLehrer).setHeader("Lehrer");
         veranstaltungenGrid.addColumn(Veranstaltung::getKennwort).setHeader("Kennwort");
@@ -63,13 +88,16 @@ public class AdminVeranstaltungView extends VerticalLayout {
 
         refreshGrid();
 
-        Button zurück = new Button("Zurück", e
-                -> getUI().ifPresent(ui -> ui.navigate("admin"))
+        // Zurück-Button
+        Button zurück = new Button("Zurück", e ->
+                getUI().ifPresent(ui -> ui.navigate("admin"))
         );
+        zurück.addClassName("button");
 
+        // Gesamtaufbau
         add(
-                new H3("Veranstaltungsverwaltung"),
-                new HorizontalLayout(name, lehrerBox, startzeit, erstellen),
+                ueberschrift,
+                formularLayout,
                 veranstaltungenGrid,
                 zurück
         );

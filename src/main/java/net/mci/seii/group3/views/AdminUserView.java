@@ -26,6 +26,7 @@ public class AdminUserView extends VerticalLayout {
                 getUI().ifPresent(ui -> ui.navigate("admin/benutzer/edit/" + ausgewählt.getUsername()));
             }
         });
+        grid.addClassName("grid");
 
         // Daten anzeigen
         grid.setItems(AuthService.getInstance().getAllUsers());
@@ -33,10 +34,12 @@ public class AdminUserView extends VerticalLayout {
         Button neuerUser = new Button("Neuen Benutzer anlegen", e ->
                 getUI().ifPresent(ui -> ui.navigate("admin/benutzer/form"))
         );
+        neuerUser.addClassName("button");
 
         Button zurück = new Button("Zurück", e ->
                 getUI().ifPresent(ui -> ui.navigate("admin"))
         );
+        zurück.addClassName("button");
 
         add(new HorizontalLayout(neuerUser, zurück), grid);
     }
