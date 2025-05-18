@@ -42,8 +42,7 @@ public class AdminKlassenView extends VerticalLayout {
         // Neue Klasse hinzufügen
         TextField neueKlasse = new TextField();
         neueKlasse.setPlaceholder("Neue Klasse");
-        neueKlasse.setWidth("250px");
-        neueKlasse.setHeight("40px");
+        neueKlasse.addClassName("form-field");
         Button add = new Button("Klasse erstellen", e -> {
             if (!neueKlasse.isEmpty()) {
                 KlassenService.getInstance().addKlasse(neueKlasse.getValue().trim());

@@ -33,6 +33,7 @@
 }
 
 .button {
+    height: 35px;
     background-color: #044c84;
     color: white;
     border: none;
@@ -56,4 +57,14 @@
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
+}
+
+.form-field {
+    width: 200px;
+    height: 40px;
+    font-size: 14px;
+}
+
+.form-wide {
+    width: 250px;
 }
