@@ -3,6 +3,7 @@ package net.mci.seii.group3.views;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.html.H2;
+import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
@@ -12,12 +13,12 @@ import net.mci.seii.group3.service.AuthService;
 import net.mci.seii.group3.service.KlassenService;
 import net.mci.seii.group3.service.PersistenzService;
 
-@Route("admin/benutzer/edit/:username")
+@Route(value = "admin/benutzer/edit/:username", layout = MainLayout.class)
 public class AdminUserEditView extends VerticalLayout implements BeforeEnterObserver {
 
-    private final TextField usernameField = new TextField("Benutzername");
-    private final ComboBox<User.Role> rolleBox = new ComboBox<>("Rolle");
-    private final ComboBox<String> klasseBox = new ComboBox<>("Klasse (nur für Schüler)");
+    private final TextField usernameField = new TextField();
+    private final ComboBox<User.Role> rolleBox = new ComboBox<>();
+    private final ComboBox<String> klasseBox = new ComboBox<>();
 
     private User currentUser;
 
@@ -25,7 +26,9 @@ public class AdminUserEditView extends VerticalLayout implements BeforeEnterObse
         setSpacing(true);
         setPadding(true);
 
-        add(new H2("Benutzer bearbeiten"));
+        H3 titel = new H3("Benutzer bearbeiten");
+        titel.addClassName("title");
+        add(titel);
 
         rolleBox.setItems(User.Role.values());
         klasseBox.setItems(KlassenService.getInstance().getAllKlassenNamen());
@@ -41,7 +44,7 @@ public class AdminUserEditView extends VerticalLayout implements BeforeEnterObse
             currentUser.setUsername(neuerName);
             currentUser.setRole(rolleBox.getValue());
 
-            // ✅ Benutzername in Klassen aktualisieren
+            // Benutzername in Klassen aktualisieren
             if (!alterName.equals(neuerName)) {
                 KlassenService.getInstance().aktualisiereBenutzername(alterName, neuerName);
             }
@@ -55,11 +58,19 @@ public class AdminUserEditView extends VerticalLayout implements BeforeEnterObse
             PersistenzService.speichernAlles();
             getUI().ifPresent(ui -> ui.navigate("admin/benutzer"));
         });
+        speichern.addClassName("button");
 
         Button abbrechen = new Button("Abbrechen", e
                 -> getUI().ifPresent(ui -> ui.navigate("admin/benutzer"))
         );
+        abbrechen.addClassName("button");
 
+        usernameField.setPlaceholder("Benutzername");
+        rolleBox.setPlaceholder("Rolle");
+        klasseBox.setPlaceholder("Klasse (nur für Schüler)");
+        usernameField.addClassName("form-field");
+        rolleBox.addClassName("form-field");
+        klasseBox.addClassName("form-field");
         add(usernameField, rolleBox, klasseBox, speichern, abbrechen);
     }
 

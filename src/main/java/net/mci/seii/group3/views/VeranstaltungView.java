@@ -88,6 +88,7 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
             PersistenzService.speichernAlles();
             Notification.show("Gespeichert.");
         });
+        speichern.addClassName("button");
         titleRow.add(nameField, startzeitField, kennwortField, speichern);
         add(titleRow);
 
@@ -95,6 +96,7 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
             Span lehrerTitel = new Span("Zugewiesene Lehrer:");
             Grid<String> lehrerGrid = new Grid<>();
             lehrerGrid.setHeight("180px");
+            lehrerGrid.addClassName("grid");
             lehrerGrid.addColumn(name -> name).setHeader("Name");
 
             if (currentUser.getRole() == User.Role.ADMIN) {
@@ -104,6 +106,7 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
                         PersistenzService.speichernAlles();
                         lehrerGrid.setItems(veranstaltung.getZugewieseneLehrer());
                     });
+                    entfernen.addClassName("button");
                     return entfernen;
                 })).setHeader("Aktion");
             }
@@ -124,6 +127,7 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
                     lehrerBox.clear();
                     lehrerGrid.setItems(veranstaltung.getZugewieseneLehrer());
                 });
+                hinzufuegen.addClassName("button");
 
                 lehrerBox.setItems(AuthService.getInstance()
                         .getAlleBenutzernamen(User.Role.TEACHER)
@@ -136,6 +140,8 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
         }
 
         teilnehmerGrid = new Grid<>();
+        teilnehmerGrid.addClassName("grid");
+        teilnehmerGrid.setHeight("240px");
         teilnehmerGrid.addColumn(name -> name).setHeader("Name");
         teilnehmerGrid.addColumn(name -> {
             LocalDateTime t = veranstaltung.getTeilnahmen().get(name);
@@ -152,6 +158,7 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
                 updateGrid();
                 PersistenzService.speichernAlles();
             });
+            entfernen.addClassName("button");
             return entfernen;
         })).setHeader("Aktion");
 
@@ -159,6 +166,7 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
         updateGrid();
 
         Button zuweisenDialogButton = new Button("Studenten/Klassen zuweisen", e -> openZuweisDialog());
+        zuweisenDialogButton.addClassName("button");
         add(zuweisenDialogButton);
 
         Button pdfExport = new Button("PDF exportieren", ev -> {
@@ -173,6 +181,7 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
                 Notification.show("Export fehlgeschlagen");
             }
         });
+        pdfExport.addClassName("button");
         add(pdfExport);
     }
 
