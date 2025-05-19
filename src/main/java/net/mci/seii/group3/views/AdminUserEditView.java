@@ -26,10 +26,6 @@ public class AdminUserEditView extends VerticalLayout implements BeforeEnterObse
         setSpacing(true);
         setPadding(true);
 
-        H3 titel = new H3("Benutzer bearbeiten");
-        titel.addClassName("title");
-        add(titel);
-
         rolleBox.setItems(User.Role.values());
         klasseBox.setItems(KlassenService.getInstance().getAllKlassenNamen());
 
@@ -71,7 +67,16 @@ public class AdminUserEditView extends VerticalLayout implements BeforeEnterObse
         usernameField.addClassName("form-field");
         rolleBox.addClassName("form-field");
         klasseBox.addClassName("form-field");
-        add(usernameField, rolleBox, klasseBox, speichern, abbrechen);
+
+        H3 titel = new H3("Benutzer bearbeiten");
+        titel.addClassName("title");
+        add(
+                titel,
+                usernameField,
+                rolleBox,
+                klasseBox,
+                speichern,
+                abbrechen);
     }
 
     @Override

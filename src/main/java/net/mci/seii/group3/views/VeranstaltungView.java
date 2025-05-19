@@ -7,6 +7,7 @@ import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.datetimepicker.DateTimePicker;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Anchor;
+import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -72,6 +73,11 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
             }
             return;
         }
+
+        // Überschrift für Admin/Lehrer
+        H3 ueberschrift = new H3("Veranstaltung bearbeiten");
+        ueberschrift.addClassName("title");
+        add(ueberschrift);
 
         HorizontalLayout titleRow = new HorizontalLayout();
         titleRow.setAlignItems(Alignment.BASELINE);
@@ -205,12 +211,12 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
         studentenBox.setItems(studenten);
 
         Button zuweisen = new Button("Zuweisen", ev -> {
-            studentenBox.getSelectedItems().forEach(s
-                    -> VeranstaltungsService.getInstance().teilnehmerZuweisen(veranstaltung.getId(), s));
+            studentenBox.getSelectedItems().forEach(s ->
+                    VeranstaltungsService.getInstance().teilnehmerZuweisen(veranstaltung.getId(), s));
             klassenBox.getSelectedItems().forEach(k -> {
                 Set<String> schueler = KlassenService.getInstance().getSchuelerEinerKlasse(k);
-                schueler.forEach(s
-                        -> VeranstaltungsService.getInstance().teilnehmerZuweisen(veranstaltung.getId(), s));
+                schueler.forEach(s ->
+                        VeranstaltungsService.getInstance().teilnehmerZuweisen(veranstaltung.getId(), s));
             });
 
             PersistenzService.speichernAlles();

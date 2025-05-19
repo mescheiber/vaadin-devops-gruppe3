@@ -2,6 +2,7 @@ package net.mci.seii.group3.views;
 
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
@@ -19,7 +20,7 @@ public class AdminUserView extends VerticalLayout {
         grid.addColumn(User::getUsername).setHeader("Benutzername");
         grid.addColumn(u -> u.getRole().name()).setHeader("Rolle");
 
-        // ✅ Datensatz auswählen und zur Edit-View navigieren
+        // Datensatz auswählen und zur Edit-View navigieren
         grid.asSingleSelect().addValueChangeListener(event -> {
             User ausgewählt = event.getValue();
             if (ausgewählt != null) {
@@ -41,6 +42,13 @@ public class AdminUserView extends VerticalLayout {
         );
         zurück.addClassName("button");
 
-        add(new HorizontalLayout(neuerUser, zurück), grid);
+        H3 titel = new H3("Benutzerverwaltung");
+        titel.addClassName("title");
+
+        add(
+                titel,
+                new HorizontalLayout(neuerUser, zurück),
+                grid
+        );
     }
 }

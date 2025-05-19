@@ -2,6 +2,7 @@ package net.mci.seii.group3.views;
 
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.PasswordField;
@@ -56,6 +57,17 @@ public class AdminUserFormView extends VerticalLayout {
         );
         abbrechen.addClassName("button");
 
-        add(username, passwort, rolleBox, klasseBox, speichern, abbrechen);
+        H3 ueberschrift = new H3("Benutzer hinzufügen");
+        ueberschrift.addClassName("title");
+
+        add(
+                ueberschrift,
+                username,
+                passwort,
+                rolleBox,
+                klasseBox,
+                speichern,
+                abbrechen
+        );
     }
 }
