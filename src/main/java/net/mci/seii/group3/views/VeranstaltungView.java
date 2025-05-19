@@ -65,6 +65,7 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
                     }
                 });
                 add(kennwort, teilnehmen);
+                teilnehmen.addClassName("button");
             } else {
                 Notification.show("Du hast bereits teilgenommen.");
                 UI.getCurrent().navigate("student");
@@ -217,6 +218,7 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
             updateGrid();
             Notification.show("Zuweisung erfolgreich");
         });
+        zuweisen.addClassName("button");
 
         dialog.add(klassenBox, studentenBox, new HorizontalLayout(zuweisen));
         dialog.open();
