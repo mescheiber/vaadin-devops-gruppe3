@@ -25,6 +25,7 @@ public class StudentenView extends VerticalLayout implements AfterNavigationObse
         }
 
         Grid<Veranstaltung> grid = new Grid<>(Veranstaltung.class, false);
+        grid.addClassName("grid");
         grid.addColumn(Veranstaltung::getName).setHeader("Veranstaltung");
         grid.addColumn(v -> v.getStartzeit().toString()).setHeader("Zeit");
 

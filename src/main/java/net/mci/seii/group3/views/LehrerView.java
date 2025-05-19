@@ -35,6 +35,7 @@ public class LehrerView extends VerticalLayout {
         grid.addColumn(Veranstaltung::getKennwort).setHeader("Kennwort");
         grid.addColumn(v -> v.getTeilnehmer().size()).setHeader("Teilnehmeranzahl");
         grid.setItems(VeranstaltungsService.getInstance().getVeranstaltungenFürLehrer(lehrer));
+        grid.addClassName("grid");
 
         // Bei Klick in Zeile in Edit-View springen
         grid.asSingleSelect().addValueChangeListener(e -> {
@@ -69,6 +70,7 @@ public class LehrerView extends VerticalLayout {
             klasseBox.clear();
             Notification.show("Veranstaltung angelegt");
         });
+        erstellen.addClassName("button");
 
         add(
             nameField, startField, klasseBox, erstellen,

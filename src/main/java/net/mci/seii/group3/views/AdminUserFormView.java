@@ -49,10 +49,12 @@ public class AdminUserFormView extends VerticalLayout {
                 Notification.show("Benutzername bereits vergeben");
             }
         });
+        speichern.addClassName("button");
 
         Button abbrechen = new Button("Zurück", e ->
                 getUI().ifPresent(ui -> ui.navigate("admin/benutzer"))
         );
+        abbrechen.addClassName("button");
 
         add(username, passwort, rolleBox, klasseBox, speichern, abbrechen);
     }
