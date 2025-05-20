@@ -4,7 +4,7 @@ orbs:
 jobs:
     build:
         docker:
-            - image: maven:3.9.6-openjdk-21
+            - image: eclipse-temurin:21-jdk
         environment:
           MAVEN_CLI_OPTS: "--batch-mode"
         steps:
