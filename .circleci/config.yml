@@ -4,7 +4,7 @@ orbs:
 jobs:
     build:
         docker:
-            - image: maven:3.8.1-openjdk-17-slim
+            - image: cimg/openjdk:21.0
         environment:
           MAVEN_CLI_OPTS: "--batch-mode"
         steps:
@@ -15,7 +15,7 @@ jobs:
                 destination: target                
     test:
         docker:
-            - image: maven:3.8.1-openjdk-17-slim
+            - image: cimg/openjdk:21.0
         steps:
             - checkout
             - run: mvn test -e
