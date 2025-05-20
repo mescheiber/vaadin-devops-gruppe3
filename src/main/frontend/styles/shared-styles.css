@@ -59,11 +59,25 @@
     flex-direction: column;
 }
 
+/*.form-field {*/
+/*    width: 200px;*/
+/*    height: 56px;*/
+/*    font-size: 14px;*/
+/*}*/
+
 .form-field {
-    width: 200px;
-    height: 56px;
+    width: 250px;
+    box-sizing: border-box;
     font-size: 14px;
 }
+
+
+.landing-field {
+    max-width: 300px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
 
 .form-wide {
     width: 250px;
@@ -111,21 +125,50 @@ label {
     font-weight: 500;
     font-size: 14px;
 }
+/*.vaadin-text-field label,*/
+/*.vaadin-combo-box label {*/
+/*    color: #333;*/
+/*    font-size: 14px;*/
+/*    font-weight: 500;*/
+/*    position: relative;*/
+/*    z-index: 1;*/
+/*    background: white;*/
+/*    padding: 0 4px;*/
+/*}*/
 .vaadin-text-field label,
 .vaadin-combo-box label {
-    color: #333;
-    font-size: 14px;
     font-weight: 500;
-    position: relative;
-    z-index: 1;
+    font-size: 14px;
+    color: #333;
+}
+
+
+.centered-layout {
+    padding: 1rem;
+    margin: auto;
+    width: 100%;
+    max-width: 400px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+
+:host([overlay])::part(drawer) {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 1000;
+    height: 100vh;
     background: white;
-    padding: 0 4px;
-}
-vaadin-form-layout::part(label) {
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    overflow: hidden;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
 }
 
-
+:host([overlay][drawer-opened])::part(drawer) {
+    transform: translateX(0);
+}
 

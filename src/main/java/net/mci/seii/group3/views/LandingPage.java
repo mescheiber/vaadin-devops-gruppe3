@@ -8,6 +8,8 @@ import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.router.BeforeEnterEvent;
+import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 import net.mci.seii.group3.model.User;
@@ -15,11 +17,19 @@ import net.mci.seii.group3.service.AuthService;
 import net.mci.seii.group3.service.KlassenService;
 
 @Route(value = "home", layout = MainLayout.class)
-public class LandingPage extends VerticalLayout {
+public class LandingPage extends VerticalLayout implements BeforeEnterObserver {
+
+    @Override
+    public void beforeEnter(BeforeEnterEvent event) {
+        User user = VaadinSession.getCurrent().getAttribute(User.class);
+        if (user == null) {
+            event.forwardTo("");
+        }
+    }
 
     public LandingPage() {
-        setPadding(true);
-        setSpacing(true);
+        getStyle().set("padding", "1rem"); // replaces setPadding(true)
+        setSpacing(true); // Optional: You may use a CSS class instead
         setAlignItems(Alignment.CENTER);
 
         User currentUser = VaadinSession.getCurrent().getAttribute(User.class);
@@ -60,13 +70,7 @@ public class LandingPage extends VerticalLayout {
             profileForm.add(klasseField);
         }
 
-
-        VerticalLayout content = createContent(currentUser, avatar, profileForm);
-
-        add(content);
-    }
-
-    private static VerticalLayout createContent(User currentUser, Image avatar, FormLayout profileForm) {
+        // Password Change Fields
         PasswordField oldPassword = new PasswordField("Altes Passwort");
         PasswordField newPassword = new PasswordField("Neues Passwort");
         oldPassword.addClassName("form-field");
@@ -103,16 +107,19 @@ public class LandingPage extends VerticalLayout {
             }
         });
 
-        VerticalLayout content = new VerticalLayout(
+        VerticalLayout container = new VerticalLayout(
                 avatar,
                 profileForm,
                 passwordForm,
                 changePassword,
                 status
         );
-        content.setAlignItems(Alignment.CENTER);
-        content.setWidth("100%");
-        content.setPadding(true);
-        return content;
+        container.setAlignItems(Alignment.CENTER);
+        container.setWidth("100%");
+        container.setMaxWidth("400px");
+        container.getStyle().set("margin", "0 auto");
+
+        add(container);
     }
 }
+

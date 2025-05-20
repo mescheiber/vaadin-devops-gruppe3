@@ -77,6 +77,18 @@ public class AuthService {
         }
     }
 
+    public void updateUser(User updatedUser) {
+        String username = updatedUser.getUsername();
+        if (users.containsKey(username)) {
+            users.put(username, updatedUser); // Replaces the existing user
+        }
+    }
+
+    public void deleteUser(String username) {
+        users.remove(username);
+    }
+
+
     public boolean changePassword(String username, String oldPassword, String newPassword) {
         if (newPassword == null || newPassword.isBlank() || newPassword.length() < 6) {
             return false; // optionally enforce rules
@@ -106,7 +118,7 @@ public class AuthService {
     this.angemeldeterBenutzer = user;
 }
 
-public User getAngemeldeterBenutzer() {
+    public User getAngemeldeterBenutzer() {
     return this.angemeldeterBenutzer;
 }
 

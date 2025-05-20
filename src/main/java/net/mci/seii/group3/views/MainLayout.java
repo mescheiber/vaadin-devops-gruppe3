@@ -11,13 +11,24 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.router.BeforeEnterEvent;
+import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.HighlightConditions;
 import com.vaadin.flow.router.RouterLink;
+import com.vaadin.flow.server.VaadinSession;
+import net.mci.seii.group3.model.User;
 import net.mci.seii.group3.service.*;
 
 @CssImport("./styles/shared-styles.css")
-public class MainLayout extends AppLayout {
+public class MainLayout extends AppLayout implements BeforeEnterObserver {
 
+    @Override
+    public void beforeEnter(BeforeEnterEvent event) {
+        User user = VaadinSession.getCurrent().getAttribute(User.class);
+        if (user == null) {
+            event.forwardTo("");
+        }
+    }
     private static boolean datenBereitsGeladen = false;
 
     public MainLayout() {
@@ -31,8 +42,11 @@ public class MainLayout extends AppLayout {
             datenBereitsGeladen = true;
         }
 
+
+
         createHeader();
         createDrawer();
+        getElement().setAttribute("overlay", "");
     }
 
     private void createHeader() {

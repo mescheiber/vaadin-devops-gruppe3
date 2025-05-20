@@ -9,18 +9,27 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.router.BeforeEnterEvent;
+import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.server.VaadinSession;
 import net.mci.seii.group3.model.User;
 import net.mci.seii.group3.model.Veranstaltung;
 import net.mci.seii.group3.service.AuthService;
 import net.mci.seii.group3.service.PersistenzService;
 import net.mci.seii.group3.service.VeranstaltungsService;
 
-import java.time.LocalDateTime;
 
 @Route(value = "admin/veranstaltungen", layout = MainLayout.class)
-public class AdminVeranstaltungView extends VerticalLayout {
+public class AdminVeranstaltungView extends VerticalLayout  implements BeforeEnterObserver {
 
+    @Override
+    public void beforeEnter(BeforeEnterEvent event) {
+        User user = VaadinSession.getCurrent().getAttribute(User.class);
+        if (user == null) {
+            event.forwardTo("");
+        }
+    }
     private final Grid<Veranstaltung> veranstaltungenGrid = new Grid<>();
 
     public AdminVeranstaltungView() {
@@ -85,18 +94,12 @@ public class AdminVeranstaltungView extends VerticalLayout {
 
         refreshGrid();
 
-        // Zurück-Button
-        Button zurück = new Button("Zurück", e ->
-                getUI().ifPresent(ui -> ui.navigate("admin"))
-        );
-        zurück.addClassName("button");
 
         // Gesamtaufbau
         add(
                 ueberschrift,
                 formularLayout,
-                veranstaltungenGrid,
-                zurück
+                veranstaltungenGrid
         );
     }
 

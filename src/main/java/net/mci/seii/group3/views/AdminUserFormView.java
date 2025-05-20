@@ -4,18 +4,29 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.router.BeforeEnterEvent;
+import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.server.VaadinSession;
 import net.mci.seii.group3.model.User;
 import net.mci.seii.group3.service.AuthService;
 import net.mci.seii.group3.service.KlassenService;
 import net.mci.seii.group3.service.PersistenzService;
 
 @Route(value = "admin/benutzer/form", layout = MainLayout.class)
-public class AdminUserFormView extends VerticalLayout {
+public class AdminUserFormView extends VerticalLayout implements BeforeEnterObserver {
 
+    @Override
+    public void beforeEnter(BeforeEnterEvent event) {
+        User user = VaadinSession.getCurrent().getAttribute(User.class);
+        if (user == null) {
+            event.forwardTo("");
+        }
+    }
     public AdminUserFormView() {
         setPadding(true);
         setSpacing(true);
@@ -60,14 +71,15 @@ public class AdminUserFormView extends VerticalLayout {
         H3 ueberschrift = new H3("Benutzer hinzufügen");
         ueberschrift.addClassName("title");
 
+        HorizontalLayout buttonLayout = new HorizontalLayout(speichern, abbrechen);
+
         add(
                 ueberschrift,
                 username,
                 passwort,
                 rolleBox,
                 klasseBox,
-                speichern,
-                abbrechen
+                buttonLayout
         );
     }
 }
