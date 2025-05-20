@@ -77,6 +77,29 @@ public class AuthService {
         }
     }
 
+    public boolean changePassword(String username, String oldPassword, String newPassword) {
+        if (newPassword == null || newPassword.isBlank() || newPassword.length() < 6) {
+            return false; // optionally enforce rules
+        }
+
+        User user = getUserByName(username);
+
+        if (user != null && user.getPassword().equals(oldPassword)) {
+            user.setPassword(newPassword);
+
+            PersistenzService.speichern(
+                    getAllUsers(),
+                    VeranstaltungsService.getInstance().getAlleVeranstaltungen(),
+                    KlassenService.getInstance().getAlle()
+            );
+
+            return true;
+        }
+
+        return false;
+    }
+
+
     public User getAngemeldeterBenutzer;
     
     public void setAngemeldeterBenutzer(User user) {

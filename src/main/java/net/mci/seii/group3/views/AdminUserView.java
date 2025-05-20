@@ -37,17 +37,17 @@ public class AdminUserView extends VerticalLayout {
         );
         neuerUser.addClassName("button");
 
-        Button zurück = new Button("Zurück", e ->
-                getUI().ifPresent(ui -> ui.navigate("admin"))
-        );
-        zurück.addClassName("button");
+//        Button zurück = new Button("Zurück", e ->
+//                getUI().ifPresent(ui -> ui.navigate("admin"))
+//        );
+//        zurück.addClassName("button");
 
         H3 titel = new H3("Benutzerverwaltung");
         titel.addClassName("title");
 
         add(
                 titel,
-                new HorizontalLayout(neuerUser, zurück),
+                new HorizontalLayout(neuerUser),
                 grid
         );
     }

@@ -42,7 +42,7 @@ public class LoginView extends VerticalLayout {
                 AuthService.getInstance().setAngemeldeterBenutzer(user);
 
                 switch (user.getRole()) {
-                    case ADMIN -> getUI().ifPresent(ui -> ui.navigate("admin"));
+                    case ADMIN -> getUI().ifPresent(ui -> ui.navigate("home"));
                     case TEACHER -> getUI().ifPresent(ui -> ui.navigate("lehrer"));
                     case STUDENT -> getUI().ifPresent(ui -> ui.navigate("student"));
                 }
