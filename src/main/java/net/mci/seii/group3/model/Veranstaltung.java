@@ -25,6 +25,14 @@ public class Veranstaltung {
         this.kennwort = generateKennwort();
     }
 
+    public Veranstaltung(String id, String name, String lehrer, LocalDateTime startzeit, String kennwort) {
+        this.id = UUID.randomUUID().toString();
+        this.name = name;
+        this.lehrer = lehrer;
+        this.startzeit = startzeit;
+        this.kennwort = generateKennwort();
+    }
+
     private String generateKennwort() {
         return UUID.randomUUID().toString().substring(0, 6).toUpperCase();
     }
