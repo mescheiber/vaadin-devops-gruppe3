@@ -2,19 +2,18 @@ package net.mci.seii.group3.views;
 
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.applayout.AppLayout;
+import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Image;
+import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
-import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
-import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
-import com.vaadin.flow.server.VaadinSession;
-import net.mci.seii.group3.model.User;
-import net.mci.seii.group3.service.AuthService;
-import net.mci.seii.group3.service.KlassenService;
-import net.mci.seii.group3.service.PersistenzService;
-import net.mci.seii.group3.service.VeranstaltungsService;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.router.HighlightConditions;
+import com.vaadin.flow.router.RouterLink;
+import net.mci.seii.group3.service.*;
 
 @CssImport("./styles/shared-styles.css")
 public class MainLayout extends AppLayout {
@@ -22,7 +21,6 @@ public class MainLayout extends AppLayout {
     private static boolean datenBereitsGeladen = false;
 
     public MainLayout() {
-        // Initial-Laden der Daten beim ersten Aufruf
         if (!datenBereitsGeladen) {
             var daten = PersistenzService.laden();
             if (daten != null) {
@@ -34,57 +32,68 @@ public class MainLayout extends AppLayout {
         }
 
         createHeader();
+        createDrawer();
     }
 
     private void createHeader() {
-        // Logo mit Bild + Titel
-        Image logoImage = new Image("images/MCI_Logo_Subtitle.png", "Logo");
-        logoImage.setWidth("100px");
-        logoImage.getStyle().set("margin-right", "10px");
+        DrawerToggle toggle = new DrawerToggle();
 
-        H1 logoText = new H1("AnwesenheitsApp");
-        logoText.addClassName("title");
-
-        HorizontalLayout logoLayout = new HorizontalLayout(logoImage, logoText);
-        logoLayout.setAlignItems(Alignment.CENTER);
-        logoLayout.addClassName("logo-layout");
-
-        // Zurück-Button mit Rollenlogik
-        Button backButton = new Button("Zurück", event -> {
-            User user = (User) VaadinSession.getCurrent().getAttribute(User.class);
-            if (user != null) {
-                switch (user.getRole()) {
-                    case ADMIN -> UI.getCurrent().navigate("admin");
-                    case TEACHER -> UI.getCurrent().navigate("lehrer");
-                    case STUDENT -> UI.getCurrent().navigate("student");
-                    default -> UI.getCurrent().navigate("");
-                }
-            } else {
-                UI.getCurrent().navigate("");
-            }
+        // Logout button
+        Button logoutButton = new Button("Logout", e -> {
+            AuthService.getInstance().logout(); // Encapsulate logout logic here
+            UI.getCurrent().navigate("");
         });
-        backButton.addClassName("button");
+        logoutButton.addClassName("logoutButton");
 
-        // Logout-Button
-        Button logout = new Button("Logout", event -> {
-            VaadinSession.getCurrent().setAttribute(User.class, null);
-            UI.getCurrent().navigate("login");
-        });
-        logout.addClassName("button");
+        // Logo + title
+        Image logo = new Image("images/logo_app.png", "Logo");
+        logo.setHeight("40px");
+        logo.getStyle().set("border-radius", "8px");
 
-        // Rechte Button-Gruppe
-        HorizontalLayout buttonLayout = new HorizontalLayout(backButton, logout);
-        buttonLayout.setSpacing(true);
-        buttonLayout.setAlignItems(Alignment.CENTER);
+        H1 title = new H1("AnwesenheitsApp");
+        title.addClassNames("text-l", "m-m");
 
-        // Header mit Styling
-        HorizontalLayout header = new HorizontalLayout(logoLayout, buttonLayout);
-        header.setWidthFull();
+        HorizontalLayout branding = new HorizontalLayout(logo, title);
+        branding.setAlignItems(FlexComponent.Alignment.CENTER);
+        branding.setSpacing(true);
+
+        // Spacers for layout balance
+        Span leftSpacer = new Span();
+        Span rightSpacer = new Span();
+
+        // Header layout
+        HorizontalLayout header = new HorizontalLayout(toggle, leftSpacer, branding, rightSpacer, logoutButton);
+        header.setAlignItems(FlexComponent.Alignment.CENTER);
+        header.setSpacing(true);
         header.setPadding(true);
-        header.setJustifyContentMode(JustifyContentMode.BETWEEN);
-        header.setAlignItems(Alignment.CENTER);
-        header.setClassName("header");
+        header.setWidthFull();
+        header.setFlexGrow(1, leftSpacer);
+        header.setFlexGrow(1, rightSpacer);
 
         addToNavbar(header);
     }
+
+    private void createDrawer() {
+        H1 drawerTitle = new H1("Navigation");
+        drawerTitle.addClassName("drawer-title");
+
+        RouterLink benutzer = new RouterLink("Benutzerverwaltung", AdminUserView.class);
+        RouterLink klassen = new RouterLink("Klassenverwaltung", AdminKlassenView.class);
+        RouterLink veranstaltungen = new RouterLink("Veranstaltungen", AdminVeranstaltungView.class);
+
+        benutzer.setHighlightCondition(HighlightConditions.sameLocation());
+        klassen.setHighlightCondition(HighlightConditions.sameLocation());
+        veranstaltungen.setHighlightCondition(HighlightConditions.sameLocation());
+
+        benutzer.addClassName("drawer-link");
+        klassen.addClassName("drawer-link");
+        veranstaltungen.addClassName("drawer-link");
+
+        VerticalLayout drawerContent = new VerticalLayout(drawerTitle, benutzer, klassen, veranstaltungen);
+        drawerContent.addClassName("drawer-content");
+
+        addToDrawer(drawerContent);
+    }
+
+
 }

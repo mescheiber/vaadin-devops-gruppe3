@@ -1,97 +1,77 @@
 package net.mci.seii.group3.views;
 
-import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.combobox.ComboBox;
-import com.vaadin.flow.component.html.H2;
-import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.orderedlayout.FlexLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.router.*;
+import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.router.BeforeEnterObserver;
+import com.vaadin.flow.router.Route;
 import net.mci.seii.group3.model.User;
 import net.mci.seii.group3.service.AuthService;
-import net.mci.seii.group3.service.KlassenService;
-import net.mci.seii.group3.service.PersistenzService;
+import com.vaadin.flow.router.BeforeEnterEvent;
 
 @Route(value = "admin/benutzer/edit/:username", layout = MainLayout.class)
 public class AdminUserEditView extends VerticalLayout implements BeforeEnterObserver {
 
-    private final TextField usernameField = new TextField();
-    private final ComboBox<User.Role> rolleBox = new ComboBox<>();
-    private final ComboBox<String> klasseBox = new ComboBox<>();
-
-    private User currentUser;
+    private final Grid<User> userGrid = new Grid<>(User.class, false);
+    private final UserForm userForm = new UserForm();
 
     public AdminUserEditView() {
-        setSpacing(true);
-        setPadding(true);
+        setSizeFull();
+        userForm.setVisible(false); // Start hidden until a user is selected
 
-        rolleBox.setItems(User.Role.values());
-        klasseBox.setItems(KlassenService.getInstance().getAllKlassenNamen());
+        // Setup grid
+        userGrid.setItems(AuthService.getInstance().getAllUsers());
+        userGrid.addColumn(User::getUsername).setHeader("Benutzername");
+        userGrid.addColumn(User::getRole).setHeader("Rolle");
 
-        Button speichern = new Button("Änderungen speichern", e -> {
-            if (currentUser == null) {
-                return;
+        userGrid.asSingleSelect().addValueChangeListener(event -> {
+            User selected = event.getValue();
+            if (selected != null) {
+                userForm.setUser(selected);
+                userForm.setVisible(true);
+            } else {
+                userForm.setVisible(false);
             }
-
-            String alterName = currentUser.getUsername();
-            String neuerName = usernameField.getValue();
-
-            currentUser.setUsername(neuerName);
-            currentUser.setRole(rolleBox.getValue());
-
-            // Benutzername in Klassen aktualisieren
-            if (!alterName.equals(neuerName)) {
-                KlassenService.getInstance().aktualisiereBenutzername(alterName, neuerName);
-            }
-
-            // Klasse ggf. neu zuweisen (wenn Student)
-            KlassenService.getInstance().removeBenutzerAusAllenKlassen(neuerName);
-            if (rolleBox.getValue() == User.Role.STUDENT && klasseBox.getValue() != null) {
-                KlassenService.getInstance().schuelerZurKlasse(klasseBox.getValue(), neuerName);
-            }
-
-            PersistenzService.speichernAlles();
-            getUI().ifPresent(ui -> ui.navigate("admin/benutzer"));
         });
-        speichern.addClassName("button");
 
-        Button abbrechen = new Button("Abbrechen", e
-                -> getUI().ifPresent(ui -> ui.navigate("admin/benutzer"))
-        );
-        abbrechen.addClassName("button");
+        userForm.addListener(UserForm.SaveEvent.class, e -> {
+            userForm.setVisible(false);
+            userGrid.getDataProvider().refreshAll();
+        });
 
-        usernameField.setPlaceholder("Benutzername");
-        rolleBox.setPlaceholder("Rolle");
-        klasseBox.setPlaceholder("Klasse (nur für Schüler)");
-        usernameField.addClassName("form-field");
-        rolleBox.addClassName("form-field");
-        klasseBox.addClassName("form-field");
+        userForm.addListener(UserForm.CancelEvent.class, e -> {
+            userForm.setVisible(false);
+            userGrid.deselectAll();
+        });
 
-        H3 titel = new H3("Benutzer bearbeiten");
-        titel.addClassName("title");
-        add(
-                titel,
-                usernameField,
-                rolleBox,
-                klasseBox,
-                speichern,
-                abbrechen);
+        // Responsive layout container
+        FlexLayout content = new FlexLayout(userGrid, userForm);
+        content.setFlexGrow(4, userGrid);
+        content.setFlexGrow(1, userForm);
+        content.setSizeFull();
+        content.getStyle().set("gap", "1em");
+        content.getStyle().set("flex-wrap", "wrap"); // This enables responsive stacking
+
+        add(content);
     }
-
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
         String username = event.getRouteParameters().get("username").orElse(null);
+
         if (username != null) {
-            currentUser = AuthService.getInstance().getUserByName(username);
-            if (currentUser != null) {
-                usernameField.setValue(currentUser.getUsername());
-                rolleBox.setValue(currentUser.getRole());
-                klasseBox.setValue(KlassenService.getInstance().getKlasseVonSchueler(username));
-                return;
+            User user = AuthService.getInstance().getUserByName(username);
+            if (user != null) {
+                userForm.setUser(user);
+                userForm.setVisible(true);
+            } else {
+                Notification.show("Benutzer nicht gefunden");
+                event.forwardTo("admin/benutzer");
             }
+        } else {
+            Notification.show("Kein Benutzername angegeben");
+            event.forwardTo("admin/benutzer");
         }
-        Notification.show("Benutzer nicht gefunden");
-        getUI().ifPresent(ui -> ui.navigate("admin/benutzer"));
     }
+
 }

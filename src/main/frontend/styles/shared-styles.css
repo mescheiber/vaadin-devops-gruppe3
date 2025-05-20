@@ -61,10 +61,71 @@
 
 .form-field {
     width: 200px;
-    height: 40px;
+    height: 56px;
     font-size: 14px;
 }
 
 .form-wide {
     width: 250px;
 }
+.drawer-title {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    margin-top: 1rem;
+    color: #044c84;
+    font-weight: 600;
+    text-align: left;
+}
+
+.drawer-link {
+    display: block;
+    padding: 10px 16px;
+    border-radius: 8px;
+    color: #044c84;
+    font-weight: 500;
+    text-decoration: none;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.drawer-link:hover {
+    background-color: #e6f0fa;
+    cursor: pointer;
+}
+
+.drawer-content {
+    padding: 1rem;
+    background-color: #f9f9f9;
+}
+
+.user-form {
+    min-width: 300px;
+    flex: 1 1 350px;
+}
+
+.vaadin-grid {
+    flex: 2 1 500px;
+}
+:host ::slotted(label),
+label {
+    color: #333;
+    font-weight: 500;
+    font-size: 14px;
+}
+.vaadin-text-field label,
+.vaadin-combo-box label {
+    color: #333;
+    font-size: 14px;
+    font-weight: 500;
+    position: relative;
+    z-index: 1;
+    background: white;
+    padding: 0 4px;
+}
+vaadin-form-layout::part(label) {
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+
+

@@ -1,5 +1,6 @@
 package net.mci.seii.group3.service;
 
+import com.vaadin.flow.server.VaadinSession;
 import net.mci.seii.group3.model.User;
 
 import java.util.HashMap;
@@ -87,9 +88,18 @@ public User getAngemeldeterBenutzer() {
 }
 
     public void logout() {
-        angemeldeterBenutzer = null;
+        // Clear in-memory user
+        this.angemeldeterBenutzer = null;
+
+        // Clear user from Vaadin session
+        VaadinSession session = VaadinSession.getCurrent();
+        if (session != null) {
+            session.setAttribute(User.class, null);
+            session.close();
+        }
     }
-    
+
+
     public User getUserByName(String username) {
     return users.get(username);
 }
