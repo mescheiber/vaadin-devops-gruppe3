@@ -1,27 +1,35 @@
 package net.mci.seii.group3.views;
 
+import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.FlexLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
 import net.mci.seii.group3.model.User;
-import net.mci.seii.group3.service.AuthService;
-import com.vaadin.flow.router.BeforeEnterEvent;
+import net.mci.seii.group3.repository.UserRepository;
+import net.mci.seii.group3.service.KlassenService;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @Route(value = "admin/benutzer/edit/:username", layout = MainLayout.class)
 public class AdminUserEditView extends VerticalLayout implements BeforeEnterObserver {
 
     private final Grid<User> userGrid = new Grid<>(User.class, false);
-    private final UserForm userForm = new UserForm();
+    private final UserForm userForm;
+    private final KlassenService klassenService;
+    private final UserRepository userRepository;
 
-    public AdminUserEditView() {
+    @Autowired
+    public AdminUserEditView(KlassenService klassenService, UserRepository userRepository) {
+        this.klassenService = klassenService;
+        this.userRepository = userRepository;
+        this.userForm = new UserForm(klassenService); // ✅ korrekt initialisiert
+
         setSizeFull();
-        userForm.setVisible(false); // Start hidden until a user is selected
+        userForm.setVisible(false);
 
-        // Setup grid
-        userGrid.setItems(AuthService.getInstance().getAllUsers());
+        userGrid.setItems(userRepository.findAll());
         userGrid.addColumn(User::getUsername).setHeader("Benutzername");
         userGrid.addColumn(User::getRole).setHeader("Rolle");
 
@@ -36,8 +44,9 @@ public class AdminUserEditView extends VerticalLayout implements BeforeEnterObse
         });
 
         userForm.addListener(UserForm.SaveEvent.class, e -> {
+            userRepository.save(e.getUser());
             userForm.setVisible(false);
-            userGrid.getDataProvider().refreshAll();
+            userGrid.setItems(userRepository.findAll());
         });
 
         userForm.addListener(UserForm.CancelEvent.class, e -> {
@@ -45,33 +54,30 @@ public class AdminUserEditView extends VerticalLayout implements BeforeEnterObse
             userGrid.deselectAll();
         });
 
-        // Responsive layout container
         FlexLayout content = new FlexLayout(userGrid, userForm);
         content.setFlexGrow(4, userGrid);
         content.setFlexGrow(1, userForm);
         content.setSizeFull();
         content.getStyle().set("gap", "1em");
-        content.getStyle().set("flex-wrap", "wrap"); // This enables responsive stacking
+        content.getStyle().set("flex-wrap", "wrap");
 
         add(content);
     }
+
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
         String username = event.getRouteParameters().get("username").orElse(null);
-
         if (username != null) {
-            User user = AuthService.getInstance().getUserByName(username);
-            if (user != null) {
+            userRepository.findByUsername(username).ifPresentOrElse(user -> {
                 userForm.setUser(user);
                 userForm.setVisible(true);
-            } else {
+            }, () -> {
                 Notification.show("Benutzer nicht gefunden");
                 event.forwardTo("admin/benutzer");
-            }
+            });
         } else {
             Notification.show("Kein Benutzername angegeben");
             event.forwardTo("admin/benutzer");
         }
     }
-
 }

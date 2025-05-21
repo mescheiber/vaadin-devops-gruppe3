@@ -1,10 +1,15 @@
 package net.mci.seii.group3.model;
 
+import jakarta.persistence.*;
 import java.util.HashSet;
 import java.util.Set;
 
+@Entity
 public class Schulklasse {
+    @Id
     private String name;
+
+    @ElementCollection(fetch = FetchType.EAGER)
     private Set<String> schueler = new HashSet<>();
 
     public Schulklasse() {}

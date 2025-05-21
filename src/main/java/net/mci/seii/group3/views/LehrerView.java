@@ -8,36 +8,52 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.server.VaadinSession;
+import jakarta.annotation.security.RolesAllowed;
+import net.mci.seii.group3.model.Schulklasse;
 import net.mci.seii.group3.model.User;
 import net.mci.seii.group3.model.Veranstaltung;
-import net.mci.seii.group3.service.AuthService;
-import net.mci.seii.group3.service.KlassenService;
-import net.mci.seii.group3.service.PersistenzService;
-import net.mci.seii.group3.service.VeranstaltungsService;
+import net.mci.seii.group3.repository.SchulklassenRepository;
+import net.mci.seii.group3.repository.VeranstaltungsRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Route(value = "lehrer", layout = MainLayout.class)
+@RolesAllowed("TEACHER")
 public class LehrerView extends VerticalLayout {
 
-    private final Grid<Veranstaltung> grid;
-    private final ComboBox<String> klasseBox;
+    private final VeranstaltungsRepository veranstaltungsRepository;
+    private final SchulklassenRepository klassenRepository;
+    private final Grid<Veranstaltung> grid = new Grid<>(Veranstaltung.class, false);
+    private final ComboBox<String> klasseBox = new ComboBox<>("Klasse zuweisen");
 
-    public LehrerView() {
+    @Autowired
+    public LehrerView(VeranstaltungsRepository veranstaltungsRepository, SchulklassenRepository klassenRepository) {
+        this.veranstaltungsRepository = veranstaltungsRepository;
+        this.klassenRepository = klassenRepository;
+
         setPadding(true);
         setSpacing(true);
 
-        User current = AuthService.getInstance().getAngemeldeterBenutzer();
-        String lehrer = current.getUsername();
+        User currentUser = (User) VaadinSession.getCurrent().getAttribute(User.class);
+        if (currentUser == null || currentUser.getRole() != User.Role.TEACHER) {
+            UI.getCurrent().navigate("");
+            return;
+        }
 
-        // Grid initialisieren
-        grid = new Grid<>(Veranstaltung.class, false);
+        String lehrerName = currentUser.getUsername();
+
+        // Grid für bestehende Veranstaltungen
         grid.addColumn(Veranstaltung::getName).setHeader("Name");
         grid.addColumn(v -> v.getStartzeit().toString()).setHeader("Startzeit");
         grid.addColumn(Veranstaltung::getKennwort).setHeader("Kennwort");
         grid.addColumn(v -> v.getTeilnehmer().size()).setHeader("Teilnehmeranzahl");
-        grid.setItems(VeranstaltungsService.getInstance().getVeranstaltungenFürLehrer(lehrer));
-        grid.addClassName("grid");
+        grid.setItems(veranstaltungsRepository.findAll().stream()
+                .filter(v -> v.getZugewieseneLehrer().contains(lehrerName))
+                .collect(Collectors.toList()));
 
-        // Bei Klick in Zeile in Edit-View springen
         grid.asSingleSelect().addValueChangeListener(e -> {
             Veranstaltung v = e.getValue();
             if (v != null) {
@@ -45,36 +61,42 @@ public class LehrerView extends VerticalLayout {
             }
         });
 
-        // Formular zum Anlegen
+        // Formular zur Erstellung
         var nameField = new com.vaadin.flow.component.textfield.TextField("Veranstaltungsname");
-        var startField = new DateTimePicker("Startzeit");
-        klasseBox = new ComboBox<>("Klasse zuweisen");
-        klasseBox.setItems(KlassenService.getInstance().getAllKlassenNamen());
+        var startzeitField = new DateTimePicker("Startzeit");
+        klasseBox.setItems(
+                klassenRepository.findAll().stream()
+                        .map(Schulklasse::getName)
+                        .toList()
+        );
 
         Button erstellen = new Button("Veranstaltung anlegen", e -> {
-            if (nameField.isEmpty() || startField.getValue() == null) {
+            if (nameField.isEmpty() || startzeitField.getValue() == null) {
                 Notification.show("Bitte Name und Startzeit angeben");
                 return;
             }
-            Veranstaltung v = VeranstaltungsService.getInstance()
-                    .createVeranstaltung(nameField.getValue(), lehrer, startField.getValue());
+
+            Veranstaltung veranstaltung = new Veranstaltung(nameField.getValue(), lehrerName, startzeitField.getValue());
+
+            // Klasse zuweisen
             if (klasseBox.getValue() != null) {
-                KlassenService.getInstance()
-                        .getSchuelerEinerKlasse(klasseBox.getValue())
-                        .forEach(s -> VeranstaltungsService.getInstance().teilnehmerZuweisen(v.getId(), s));
+                klassenRepository.findById(klasseBox.getValue()).ifPresent(klasse -> {
+                    Set<String> schueler = klasse.getSchueler();
+                    veranstaltung.getTeilnehmer().addAll(schueler);
+                });
             }
-            PersistenzService.speichernAlles();
-            grid.setItems(VeranstaltungsService.getInstance().getVeranstaltungenFürLehrer(lehrer));
+
+            veranstaltungsRepository.save(veranstaltung);
+            grid.setItems(veranstaltungsRepository.findAll().stream()
+                    .filter(v -> v.getZugewieseneLehrer().contains(lehrerName))
+                    .collect(Collectors.toList()));
+
             nameField.clear();
-            startField.clear();
+            startzeitField.clear();
             klasseBox.clear();
             Notification.show("Veranstaltung angelegt");
         });
-        erstellen.addClassName("button");
 
-        add(
-            nameField, startField, klasseBox, erstellen,
-            grid
-        );
+        add(nameField, startzeitField, klasseBox, erstellen, grid);
     }
 }

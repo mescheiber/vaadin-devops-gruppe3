@@ -16,11 +16,18 @@ import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.HighlightConditions;
 import com.vaadin.flow.router.RouterLink;
 import com.vaadin.flow.server.VaadinSession;
+import jakarta.annotation.security.PermitAll;
 import net.mci.seii.group3.model.User;
-import net.mci.seii.group3.service.*;
 
 @CssImport("./styles/shared-styles.css")
+@PermitAll
 public class MainLayout extends AppLayout implements BeforeEnterObserver {
+
+    public MainLayout() {
+        createHeader();
+        createDrawer();
+        getElement().setAttribute("overlay", "");
+    }
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
@@ -29,37 +36,16 @@ public class MainLayout extends AppLayout implements BeforeEnterObserver {
             event.forwardTo("");
         }
     }
-    private static boolean datenBereitsGeladen = false;
-
-    public MainLayout() {
-        if (!datenBereitsGeladen) {
-            var daten = PersistenzService.laden();
-            if (daten != null) {
-                AuthService.getInstance().setAll(daten.users);
-                VeranstaltungsService.getInstance().setAll(daten.veranstaltungen);
-                KlassenService.getInstance().setAlleKlassen(daten.klassen);
-            }
-            datenBereitsGeladen = true;
-        }
-
-
-
-        createHeader();
-        createDrawer();
-        getElement().setAttribute("overlay", "");
-    }
 
     private void createHeader() {
         DrawerToggle toggle = new DrawerToggle();
 
-        // Logout button
         Button logoutButton = new Button("Logout", e -> {
-            AuthService.getInstance().logout(); // Encapsulate logout logic here
+            VaadinSession.getCurrent().close(); // Benutzer-Session invalidieren
             UI.getCurrent().navigate("");
         });
         logoutButton.addClassName("logoutButton");
 
-        // Logo + title
         Image logo = new Image("images/logo_app.png", "Logo");
         logo.setHeight("40px");
         logo.getStyle().set("border-radius", "8px");
@@ -71,11 +57,9 @@ public class MainLayout extends AppLayout implements BeforeEnterObserver {
         branding.setAlignItems(FlexComponent.Alignment.CENTER);
         branding.setSpacing(true);
 
-        // Spacers for layout balance
         Span leftSpacer = new Span();
         Span rightSpacer = new Span();
 
-        // Header layout
         HorizontalLayout header = new HorizontalLayout(toggle, leftSpacer, branding, rightSpacer, logoutButton);
         header.setAlignItems(FlexComponent.Alignment.CENTER);
         header.setSpacing(true);
@@ -108,6 +92,4 @@ public class MainLayout extends AppLayout implements BeforeEnterObserver {
 
         addToDrawer(drawerContent);
     }
-
-
 }

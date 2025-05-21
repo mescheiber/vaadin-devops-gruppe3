@@ -5,8 +5,12 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import net.mci.seii.group3.model.User;
 import net.mci.seii.group3.model.Veranstaltung;
+import net.mci.seii.group3.repository.SchulklassenRepository;
+import net.mci.seii.group3.repository.UserRepository;
+import net.mci.seii.group3.repository.VeranstaltungsRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,10 +18,26 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+@Service
 public class PersistenzService {
 
     private static final Logger log = LoggerFactory.getLogger(PersistenzService.class);
     private static final String DATEI_NAME = "daten.json";
+
+    private final UserRepository userRepository;
+    private final VeranstaltungsRepository veranstaltungsRepository;
+    private final SchulklassenRepository klassenRepository;
+    private final KlassenService klassenService;
+
+    public PersistenzService(UserRepository userRepository,
+                             VeranstaltungsRepository veranstaltungsRepository,
+                             SchulklassenRepository klassenRepository,
+                         KlassenService klassenService) {
+        this.userRepository = userRepository;
+        this.veranstaltungsRepository = veranstaltungsRepository;
+        this.klassenRepository = klassenRepository;
+        this.klassenService = klassenService;
+    }
 
     public static class Speicherbild {
         public List<User> users;
@@ -33,7 +53,15 @@ public class PersistenzService {
         }
     }
 
-    public static void speichern(List<User> users, List<Veranstaltung> veranstaltungen, Map<String, Set<String>> klassen) {
+    public void speichernAlles() {
+        speichern(
+            userRepository.findAll(),
+            veranstaltungsRepository.findAll(),
+            klassenService.findAllAsMap()
+        );
+    }
+
+    public void speichern(List<User> users, List<Veranstaltung> veranstaltungen, Map<String, Set<String>> klassen) {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
         mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
@@ -48,7 +76,7 @@ public class PersistenzService {
         }
     }
 
-    public static Speicherbild laden() {
+    public Speicherbild laden() {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
         mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
@@ -67,13 +95,5 @@ public class PersistenzService {
             log.error("Fehler beim Laden der Datei '{}'", DATEI_NAME, e);
             return null;
         }
-    }
-
-    public static void speichernAlles() {
-        speichern(
-            AuthService.getInstance().getAllUsers(),
-            VeranstaltungsService.getInstance().getAlleVeranstaltungen(),
-            KlassenService.getInstance().getAlle()
-        );
     }
 }

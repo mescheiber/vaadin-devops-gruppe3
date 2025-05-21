@@ -9,59 +9,58 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.router.BeforeEnterEvent;
-import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.server.VaadinSession;
+import jakarta.annotation.security.RolesAllowed;
 import net.mci.seii.group3.model.User;
 import net.mci.seii.group3.model.Veranstaltung;
-import net.mci.seii.group3.service.AuthService;
-import net.mci.seii.group3.service.PersistenzService;
-import net.mci.seii.group3.service.VeranstaltungsService;
+import net.mci.seii.group3.repository.UserRepository;
+import net.mci.seii.group3.repository.VeranstaltungsRepository;
 
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Route(value = "admin/veranstaltungen", layout = MainLayout.class)
-public class AdminVeranstaltungView extends VerticalLayout  implements BeforeEnterObserver {
+@RolesAllowed("ADMIN")
+public class AdminVeranstaltungView extends VerticalLayout {
 
-    @Override
-    public void beforeEnter(BeforeEnterEvent event) {
-        User user = VaadinSession.getCurrent().getAttribute(User.class);
-        if (user == null) {
-            event.forwardTo("");
-        }
-    }
     private final Grid<Veranstaltung> veranstaltungenGrid = new Grid<>();
+    private final VeranstaltungsRepository veranstaltungsRepository;
+    private final UserRepository userRepository;
 
-    public AdminVeranstaltungView() {
+    public AdminVeranstaltungView(VeranstaltungsRepository veranstaltungsRepository,
+                                  UserRepository userRepository) {
+        this.veranstaltungsRepository = veranstaltungsRepository;
+        this.userRepository = userRepository;
+
         setPadding(true);
         setSpacing(true);
 
         veranstaltungenGrid.addClassName("grid");
 
-        // Titel
+        // Überschrift
         H3 ueberschrift = new H3("Veranstaltungsverwaltung");
         ueberschrift.addClassName("title");
 
-        // Eingabefelder mit Placeholder
+        // Eingabefelder
         TextField name = new TextField();
         name.setPlaceholder("Veranstaltungsname");
         name.addClassName("form-field");
 
         ComboBox<String> lehrerBox = new ComboBox<>();
         lehrerBox.setPlaceholder("Lehrer");
-        lehrerBox.setItems(AuthService.getInstance().getAlleBenutzernamen(User.Role.TEACHER));
+        List<String> lehrer = userRepository.findByRole(User.Role.TEACHER).stream()
+                .map(User::getUsername)
+                .toList();
+        lehrerBox.setItems(lehrer);
         lehrerBox.addClassName("form-field");
 
-        DateTimePicker startzeit = new DateTimePicker(); // Kein setPlaceholder möglich
+        DateTimePicker startzeit = new DateTimePicker();
         startzeit.addClassNames("form-field", "form-wide");
 
-        // Button zum Anlegen
         Button erstellen = new Button("Veranstaltung anlegen", e -> {
             if (!name.isEmpty() && lehrerBox.getValue() != null && startzeit.getValue() != null) {
-                VeranstaltungsService.getInstance()
-                        .createVeranstaltung(name.getValue(), lehrerBox.getValue(), startzeit.getValue());
-
-                PersistenzService.speichernAlles();
+                Veranstaltung v = new Veranstaltung(name.getValue(), lehrerBox.getValue(), startzeit.getValue());
+                veranstaltungsRepository.save(v);
                 refreshGrid();
                 name.clear();
                 startzeit.clear();
@@ -73,12 +72,11 @@ public class AdminVeranstaltungView extends VerticalLayout  implements BeforeEnt
         erstellen.setHeight("40px");
         erstellen.addClassName("button");
 
-        // Horizontales Formularlayout
         HorizontalLayout formularLayout = new HorizontalLayout(name, lehrerBox, startzeit, erstellen);
         formularLayout.setAlignItems(Alignment.BASELINE);
         formularLayout.setSpacing(true);
 
-        // Tabelle für bestehende Veranstaltungen
+        // Grid konfigurieren
         veranstaltungenGrid.addColumn(Veranstaltung::getName).setHeader("Titel");
         veranstaltungenGrid.addColumn(Veranstaltung::getLehrer).setHeader("Lehrer");
         veranstaltungenGrid.addColumn(Veranstaltung::getKennwort).setHeader("Kennwort");
@@ -94,16 +92,13 @@ public class AdminVeranstaltungView extends VerticalLayout  implements BeforeEnt
 
         refreshGrid();
 
+        Button zurück = new Button("Zurück", e -> getUI().ifPresent(ui -> ui.navigate("admin")));
+        zurück.addClassName("button");
 
-        // Gesamtaufbau
-        add(
-                ueberschrift,
-                formularLayout,
-                veranstaltungenGrid
-        );
+        add(ueberschrift, formularLayout, veranstaltungenGrid, zurück);
     }
 
     private void refreshGrid() {
-        veranstaltungenGrid.setItems(VeranstaltungsService.getInstance().getAlleVeranstaltungen());
+        veranstaltungenGrid.setItems(veranstaltungsRepository.findAll());
     }
 }

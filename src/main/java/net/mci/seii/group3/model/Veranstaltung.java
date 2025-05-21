@@ -1,32 +1,43 @@
 package net.mci.seii.group3.model;
 
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.*;
 
+@Entity
 public class Veranstaltung {
-
+    @Id
     private String id;
+
     private String name;
-    private String lehrer;
-    private String kennwort;
     private LocalDateTime startzeit;
+    private String kennwort;
+    private String hauptLehrer;
+
+    @ElementCollection(fetch = FetchType.EAGER)
     private Set<String> teilnehmer = new HashSet<>();
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "veranstaltung_teilnahmen")
+    @MapKeyColumn(name = "username")
+    @Column(name = "zeitpunkt")
     private Map<String, LocalDateTime> teilnahmen = new HashMap<>();
 
-    public Veranstaltung() {
-        // Für Jackson
-    }
+    @ElementCollection(fetch = FetchType.EAGER)
+    private Set<String> zugewieseneLehrer = new HashSet<>();
+    
 
-    public Veranstaltung(String name, String lehrer, LocalDateTime startzeit) {
+
+
+    public Veranstaltung() {}
+
+    public Veranstaltung(String name, String hauptLehrer, LocalDateTime startzeit) {
         this.id = UUID.randomUUID().toString();
         this.name = name;
-        this.lehrer = lehrer;
+        this.hauptLehrer = hauptLehrer;
         this.startzeit = startzeit;
-        this.kennwort = generateKennwort();
-    }
-
-    private String generateKennwort() {
-        return UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+        this.kennwort = UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+        this.zugewieseneLehrer.add(hauptLehrer);
     }
 
     // Getter
@@ -39,7 +50,7 @@ public class Veranstaltung {
     }
 
     public String getLehrer() {
-        return lehrer;
+        return hauptLehrer;
     }
 
     public String getKennwort() {
@@ -68,7 +79,7 @@ public class Veranstaltung {
     }
 
     public void setLehrer(String lehrer) {
-        this.lehrer = lehrer;
+        this.hauptLehrer = lehrer;
     }
 
     public void setKennwort(String kennwort) {
@@ -87,10 +98,8 @@ public class Veranstaltung {
         this.teilnahmen = teilnahmen;
     }
 
-    private Set<String> zugewieseneLehrer = new HashSet<>();
 
     public Set<String> getZugewieseneLehrer() {
         return zugewieseneLehrer;
     }
-
 }

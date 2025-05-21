@@ -4,30 +4,26 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.router.BeforeEnterEvent;
-import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.server.VaadinSession;
 import net.mci.seii.group3.model.User;
-import net.mci.seii.group3.service.AuthService;
-import net.mci.seii.group3.service.KlassenService;
-import net.mci.seii.group3.service.PersistenzService;
+import net.mci.seii.group3.repository.SchulklassenRepository;
+import net.mci.seii.group3.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @Route(value = "admin/benutzer/form", layout = MainLayout.class)
-public class AdminUserFormView extends VerticalLayout implements BeforeEnterObserver {
+public class AdminUserFormView extends VerticalLayout {
 
-    @Override
-    public void beforeEnter(BeforeEnterEvent event) {
-        User user = VaadinSession.getCurrent().getAttribute(User.class);
-        if (user == null) {
-            event.forwardTo("");
-        }
-    }
-    public AdminUserFormView() {
+    private final UserRepository userRepository;
+    private final SchulklassenRepository klassenRepository;
+
+    @Autowired
+    public AdminUserFormView(UserRepository userRepository, SchulklassenRepository klassenRepository) {
+        this.userRepository = userRepository;
+        this.klassenRepository = klassenRepository;
+
         setPadding(true);
         setSpacing(true);
 
@@ -38,7 +34,7 @@ public class AdminUserFormView extends VerticalLayout implements BeforeEnterObse
         rolleBox.setItems(User.Role.values());
 
         ComboBox<String> klasseBox = new ComboBox<>("Klasse (nur für Schüler)");
-        klasseBox.setItems(KlassenService.getInstance().getAllKlassenNamen());
+        klasseBox.setItems(klassenRepository.findAll().stream().map(k -> k.getName()).toList());
 
         Button speichern = new Button("Speichern", e -> {
             String name = username.getValue();
@@ -50,17 +46,22 @@ public class AdminUserFormView extends VerticalLayout implements BeforeEnterObse
                 return;
             }
 
-            boolean ok = AuthService.getInstance().register(name, pass, rolle);
-            if (ok) {
-                if (rolle == User.Role.STUDENT && klasseBox.getValue() != null) {
-                    KlassenService.getInstance().schuelerZurKlasse(klasseBox.getValue(), name);
-                }
-                PersistenzService.speichernAlles();
-                getUI().ifPresent(ui -> ui.navigate("admin/benutzer"));
-            } else {
+            if (userRepository.existsById(name)) {
                 Notification.show("Benutzername bereits vergeben");
+                return;
             }
+
+            User neuerUser = new User(name, pass, rolle);
+
+            if (rolle == User.Role.STUDENT && klasseBox.getValue() != null) {
+                klassenRepository.findById(klasseBox.getValue())
+                        .ifPresent(klasse -> neuerUser.setKlasse(klasse.getName()));
+            }
+
+            userRepository.save(neuerUser);
+            getUI().ifPresent(ui -> ui.navigate("admin/benutzer"));
         });
+
         speichern.addClassName("button");
 
         Button abbrechen = new Button("Zurück", e ->
@@ -71,15 +72,14 @@ public class AdminUserFormView extends VerticalLayout implements BeforeEnterObse
         H3 ueberschrift = new H3("Benutzer hinzufügen");
         ueberschrift.addClassName("title");
 
-        HorizontalLayout buttonLayout = new HorizontalLayout(speichern, abbrechen);
-
         add(
                 ueberschrift,
                 username,
                 passwort,
                 rolleBox,
                 klasseBox,
-                buttonLayout
+                speichern,
+                abbrechen
         );
     }
 }

@@ -1,94 +1,60 @@
 package net.mci.seii.group3.service;
 
 import net.mci.seii.group3.model.Veranstaltung;
+import net.mci.seii.group3.repository.VeranstaltungsRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.List;
+import java.util.Optional;
 
+@Service
 public class VeranstaltungsService {
 
-    private static final VeranstaltungsService instance = new VeranstaltungsService();
-    private final Map<String, Veranstaltung> veranstaltungen = new HashMap<>();
+    private final VeranstaltungsRepository veranstaltungsRepository;
 
-    public static VeranstaltungsService getInstance() {
-        return instance;
-    }
-
-    // Konstruktor lädt gespeicherte Daten (falls vorhanden)
-    private VeranstaltungsService() {
-        PersistenzService.Speicherbild data = PersistenzService.laden();
-        if (data != null && data.veranstaltungen != null) {
-            data.veranstaltungen.forEach(v -> veranstaltungen.put(v.getId(), v));
-        }
-    }
-
-    public Veranstaltung createVeranstaltung(String name, String lehrer, LocalDateTime startzeit) {
-        Veranstaltung v = new Veranstaltung(name, lehrer, startzeit);
-        veranstaltungen.put(v.getId(), v);
-        speichern(); // nach Erstellung speichern
-        return v;
-    }
-
-    public List<Veranstaltung> getVeranstaltungenFürLehrer(String lehrer) {
-        return veranstaltungen.values().stream()
-                .filter(v -> v.getLehrer().equals(lehrer))
-                .sorted(Comparator.comparing(Veranstaltung::getStartzeit))
-                .toList();
+    @Autowired
+    public VeranstaltungsService(VeranstaltungsRepository veranstaltungsRepository) {
+        this.veranstaltungsRepository = veranstaltungsRepository;
     }
 
     public List<Veranstaltung> getAlleVeranstaltungen() {
-        return new ArrayList<>(veranstaltungen.values());
+        return veranstaltungsRepository.findAll();
     }
 
-    public void teilnehmerZuweisen(String veranstaltungId, String username) {
-        Veranstaltung v = veranstaltungen.get(veranstaltungId);
-        if (v != null) {
+    public List<Veranstaltung> getVeranstaltungenFürLehrer(String lehrer) {
+        return veranstaltungsRepository.findByZugewieseneLehrerContaining(lehrer);
+    }
+
+    public Veranstaltung createVeranstaltung(String name, String hauptLehrer, LocalDateTime startzeit) {
+        Veranstaltung v = new Veranstaltung(name, hauptLehrer, startzeit);
+        return veranstaltungsRepository.save(v);
+    }
+
+    public boolean prüfenTeilnahme(String veranstaltungsId, String kennwort, String benutzer) {
+        var opt = veranstaltungsRepository.findById(veranstaltungsId);
+        if (opt.isEmpty()) return false;
+        Veranstaltung v = opt.get();
+        if (!v.getKennwort().equals(kennwort)) return false;
+        v.getTeilnahmen().put(benutzer, LocalDateTime.now());
+        veranstaltungsRepository.save(v);
+        return true;
+    }
+
+    public void teilnehmerZuweisen(String veranstaltungsId, String username) {
+        veranstaltungsRepository.findById(veranstaltungsId).ifPresent(v -> {
             v.getTeilnehmer().add(username);
-            speichern(); // nach Zuweisung speichern
-        }
+            veranstaltungsRepository.save(v);
+        });
     }
 
-    public boolean prüfenTeilnahme(String veranstaltungId, String code, String username) {
-        Veranstaltung v = veranstaltungen.get(veranstaltungId);
-        if (v == null || !v.getTeilnehmer().contains(username)) {
-            return false;
-        }
-
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime start = v.getStartzeit();
-        if (now.isBefore(start.minusMinutes(30)) || now.isAfter(start.plusMinutes(60))) {
-            return false;
-        }
-        if (v.getKennwort().equalsIgnoreCase(code)) {
-            v.getTeilnahmen().put(username, LocalDateTime.now());
-            speichern(); // nach Teilnahme speichern
-            return true;
-        }
-        return false;
-    }
-
-    // zentrale Speichermethode aufrufen
-    private void speichern() {
-        PersistenzService.speichern(
-                AuthService.getInstance().getAllUsers(),
-                getAlleVeranstaltungen(),
-                KlassenService.getInstance().getAlle()
-        );
-
-    }
-
-    public void setAll(List<Veranstaltung> list) {
-        veranstaltungen.clear();
-        if (list != null) {
-            for (Veranstaltung v : list) {
-                veranstaltungen.put(v.getId(), v);
-            }
-        }
+    public void speichernAlles() {
+        // ggf. leer lassen – Daten werden ohnehin in DB gespeichert
     }
     
-    public Veranstaltung getVeranstaltungById(String id) {
-    return veranstaltungen.get(id);
+    public Optional<Veranstaltung> findById(String id) {
+    return veranstaltungsRepository.findById(id);
 }
-
 
 }

@@ -3,52 +3,55 @@ package net.mci.seii.group3.views;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.router.AfterNavigationEvent;
-import com.vaadin.flow.router.AfterNavigationObserver;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
+import jakarta.annotation.security.PermitAll;
 import net.mci.seii.group3.model.User;
 import net.mci.seii.group3.model.Veranstaltung;
-import net.mci.seii.group3.service.VeranstaltungsService;
+import net.mci.seii.group3.repository.VeranstaltungsRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
+@PermitAll
 @Route(value = "student", layout = MainLayout.class)
-public class StudentenView extends VerticalLayout implements AfterNavigationObserver {
+public class StudentenView extends VerticalLayout {
 
-    public StudentenView() {
-        User student = (User) VaadinSession.getCurrent().getAttribute(User.class);
-        if (student == null || student.getRole() != User.Role.STUDENT) {
+    private final VeranstaltungsRepository veranstaltungsRepository;
+
+    @Autowired
+    public StudentenView(VeranstaltungsRepository veranstaltungsRepository) {
+        this.veranstaltungsRepository = veranstaltungsRepository;
+
+        setPadding(true);
+        setSpacing(true);
+
+        User currentUser = (User) VaadinSession.getCurrent().getAttribute(User.class);
+        if (currentUser == null || currentUser.getRole() != User.Role.STUDENT) {
             UI.getCurrent().navigate("");
             return;
         }
 
         Grid<Veranstaltung> grid = new Grid<>(Veranstaltung.class, false);
-        grid.addClassName("grid");
         grid.addColumn(Veranstaltung::getName).setHeader("Veranstaltung");
-        grid.addColumn(v -> v.getStartzeit().toString()).setHeader("Zeit");
+        grid.addColumn(v -> v.getStartzeit().toString()).setHeader("Startzeit");
 
-        List<Veranstaltung> veranstaltungen = VeranstaltungsService.getInstance()
-            .getAlleVeranstaltungen().stream()
-            .filter(v -> v.getTeilnehmer().contains(student.getUsername()))
+        List<Veranstaltung> relevanteVeranstaltungen = veranstaltungsRepository.findAll().stream()
+            .filter(v -> v.getTeilnehmer().contains(currentUser.getUsername()))
             .filter(v -> v.getStartzeit().isAfter(LocalDateTime.now().minusMinutes(30)))
-            .filter(v -> !v.getTeilnahmen().containsKey(student.getUsername())) // erledigte ausblenden
+            .filter(v -> !v.getTeilnahmen().containsKey(currentUser.getUsername()))
             .toList();
 
-        grid.setItems(veranstaltungen);
+        grid.setItems(relevanteVeranstaltungen);
 
         grid.asSingleSelect().addValueChangeListener(e -> {
-            if (e.getValue() != null) {
-                UI.getCurrent().navigate("veranstaltung/" + e.getValue().getId());
+            Veranstaltung v = e.getValue();
+            if (v != null) {
+                UI.getCurrent().navigate("veranstaltung/" + v.getId());
             }
         });
 
         add(grid);
-    }
-
-    @Override
-    public void afterNavigation(AfterNavigationEvent event) {
-        setHeightFull();
     }
 }

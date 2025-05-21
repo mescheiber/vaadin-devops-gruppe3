@@ -8,118 +8,113 @@ import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.router.BeforeEnterEvent;
-import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
+import jakarta.annotation.security.RolesAllowed;
+import net.mci.seii.group3.model.Schulklasse;
 import net.mci.seii.group3.model.User;
-import net.mci.seii.group3.service.AuthService;
-import net.mci.seii.group3.service.KlassenService;
+import net.mci.seii.group3.repository.SchulklassenRepository;
+import net.mci.seii.group3.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.Optional;
 
 @Route(value = "home", layout = MainLayout.class)
-public class LandingPage extends VerticalLayout implements BeforeEnterObserver {
+@RolesAllowed({"ADMIN", "TEACHER", "STUDENT"})
+public class LandingPage extends VerticalLayout {
 
-    @Override
-    public void beforeEnter(BeforeEnterEvent event) {
-        User user = VaadinSession.getCurrent().getAttribute(User.class);
-        if (user == null) {
-            event.forwardTo("");
-        }
-    }
+    private final UserRepository userRepository;
+    private final SchulklassenRepository klassenRepository;
 
-    public LandingPage() {
-        getStyle().set("padding", "1rem"); // replaces setPadding(true)
-        setSpacing(true); // Optional: You may use a CSS class instead
+    @Autowired
+    public LandingPage(UserRepository userRepository, SchulklassenRepository klassenRepository) {
+        this.userRepository = userRepository;
+        this.klassenRepository = klassenRepository;
+
+        setPadding(true);
+        setSpacing(true);
         setAlignItems(Alignment.CENTER);
 
-        User currentUser = VaadinSession.getCurrent().getAttribute(User.class);
+        User currentUser = (User) VaadinSession.getCurrent().getAttribute(User.class);
         if (currentUser == null) {
             UI.getCurrent().navigate("");
             return;
         }
 
-        // Profile Picture
-        Image avatar = new Image("images/profile-placeholder.png", "Profile Picture");
+        Optional<User> dbUserOpt = userRepository.findById(currentUser.getUsername());
+        if (dbUserOpt.isEmpty()) {
+            UI.getCurrent().navigate("");
+            return;
+        }
+
+        User dbUser = dbUserOpt.get();
+
+        // Avatar
+        Image avatar = new Image("images/profile-placeholder.png", "Profilbild");
         avatar.setWidth("100px");
-        avatar.getStyle()
-                .set("border-radius", "50%")
+        avatar.getStyle().set("border-radius", "50%")
                 .set("border", "2px solid #ccc")
                 .set("box-shadow", "0 2px 8px rgba(0,0,0,0.1)");
 
-        // Profile Info
+        // Profilfelder
         TextField username = new TextField("Benutzername");
-        username.setValue(currentUser.getUsername());
+        username.setValue(dbUser.getUsername());
         username.setReadOnly(true);
 
         TextField role = new TextField("Rolle");
-        role.setValue(currentUser.getRole().name());
+        role.setValue(dbUser.getRole().name());
         role.setReadOnly(true);
 
-        TextField klasseField = new TextField("Klasse");
-        String klasse = KlassenService.getInstance().getKlasseVonSchueler(currentUser.getUsername());
-        klasseField.setValue(klasse != null ? klasse : "");
-        klasseField.setReadOnly(true);
-        klasseField.setVisible(currentUser.getRole() == User.Role.STUDENT);
+        TextField klasse = new TextField("Klasse");
+        klasse.setReadOnly(true);
+        klasse.setVisible(dbUser.getRole() == User.Role.STUDENT);
 
-        username.addClassName("form-field");
-        role.addClassName("form-field");
-        klasseField.addClassName("form-field");
-
-        FormLayout profileForm = new FormLayout(username, role);
-        if (currentUser.getRole() == User.Role.STUDENT) {
-            profileForm.add(klasseField);
+        if (dbUser.getKlasse() != null) {
+            Optional<Schulklasse> klasseEntity = klassenRepository.findById(dbUser.getKlasse());
+            klasseEntity.ifPresent(k -> klasse.setValue(k.getName()));
         }
 
-        // Password Change Fields
-        PasswordField oldPassword = new PasswordField("Altes Passwort");
-        PasswordField newPassword = new PasswordField("Neues Passwort");
-        oldPassword.addClassName("form-field");
-        newPassword.addClassName("form-field");
+        // Passwort ändern
+        PasswordField oldPass = new PasswordField("Altes Passwort");
+        PasswordField newPass = new PasswordField("Neues Passwort");
 
-        FormLayout passwordForm = new FormLayout(oldPassword, newPassword);
-
-        Button changePassword = new Button("Passwort ändern");
-        changePassword.addClassName("button");
-
+        Button changePass = new Button("Passwort ändern");
         Paragraph status = new Paragraph();
 
-        changePassword.addClickListener(e -> {
-            if (oldPassword.isEmpty() || newPassword.isEmpty()) {
-                status.setText("Bitte beide Passwortfelder ausfüllen.");
+        changePass.addClickListener(e -> {
+            if (!oldPass.getValue().equals(dbUser.getPassword())) {
+                status.setText("Altes Passwort stimmt nicht.");
                 status.getStyle().set("color", "red");
                 return;
             }
 
-            boolean success = AuthService.getInstance().changePassword(
-                    currentUser.getUsername(),
-                    oldPassword.getValue(),
-                    newPassword.getValue()
-            );
-
-            if (success) {
-                status.setText("Passwort erfolgreich geändert.");
-                status.getStyle().set("color", "green");
-                oldPassword.clear();
-                newPassword.clear();
-            } else {
-                status.setText("Fehler: Passwort ungültig.");
+            if (newPass.getValue().isBlank()) {
+                status.setText("Neues Passwort darf nicht leer sein.");
                 status.getStyle().set("color", "red");
+                return;
             }
+
+            dbUser.setPassword(newPass.getValue());
+            userRepository.save(dbUser);
+            status.setText("Passwort erfolgreich geändert.");
+            status.getStyle().set("color", "green");
+            oldPass.clear();
+            newPass.clear();
         });
 
-        VerticalLayout container = new VerticalLayout(
+        FormLayout profilForm = new FormLayout(username, role);
+        if (klasse.isVisible()) {
+            profilForm.add(klasse);
+        }
+
+        FormLayout pwForm = new FormLayout(oldPass, newPass);
+
+        add(
                 avatar,
-                profileForm,
-                passwordForm,
-                changePassword,
+                profilForm,
+                pwForm,
+                changePass,
                 status
         );
-        container.setAlignItems(Alignment.CENTER);
-        container.setWidth("100%");
-        container.setMaxWidth("400px");
-        container.getStyle().set("margin", "0 auto");
-
-        add(container);
     }
 }
-

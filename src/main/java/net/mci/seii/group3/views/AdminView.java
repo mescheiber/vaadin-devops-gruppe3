@@ -6,18 +6,29 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
+import net.mci.seii.group3.model.Schulklasse;
 import net.mci.seii.group3.model.User;
-import net.mci.seii.group3.service.AuthService;
-import net.mci.seii.group3.service.KlassenService;
-import net.mci.seii.group3.service.PersistenzService;
+import net.mci.seii.group3.repository.SchulklassenRepository;
+import net.mci.seii.group3.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.List;
 
 @Route(value = "admin_old", layout = MainLayout.class)
 public class AdminView extends VerticalLayout {
 
-    private final ComboBox<String> klasseBox;
-    private Grid<String> klassenGrid;
+    private final UserRepository userRepository;
+    private final SchulklassenRepository schulklassenRepository;
 
-    public AdminView() {
+    private final ComboBox<String> klasseBox;
+    private final Grid<String> klassenGrid;
+    private final Grid<User> nutzerGrid;
+
+    @Autowired
+    public AdminView(UserRepository userRepository, SchulklassenRepository schulklassenRepository) {
+        this.userRepository = userRepository;
+        this.schulklassenRepository = schulklassenRepository;
+
         setSpacing(true);
         setPadding(true);
 
@@ -25,48 +36,63 @@ public class AdminView extends VerticalLayout {
         TextField passwordField = new TextField("Passwort");
 
         klasseBox = new ComboBox<>("Klasse");
-        klasseBox.setItems(KlassenService.getInstance().getAllKlassenNamen());
+        klasseBox.setItems(schulklassenRepository.findAll().stream().map(Schulklasse::getName).toList());
 
         Button addStudent = new Button("Student anlegen", e -> {
-            if (AuthService.getInstance().register(usernameField.getValue(), passwordField.getValue(), User.Role.STUDENT)) {
+            if (!usernameField.isEmpty() && !passwordField.isEmpty()) {
+                if (userRepository.existsById(usernameField.getValue())) return;
+
+                User neuerUser = new User(usernameField.getValue(), passwordField.getValue(), User.Role.STUDENT);
                 if (klasseBox.getValue() != null) {
-                    KlassenService.getInstance().schuelerZurKlasse(klasseBox.getValue(), usernameField.getValue());
+                    schulklassenRepository.findById(klasseBox.getValue()).ifPresent(klasse -> {
+                        neuerUser.setKlasse(klasse.getName());
+                        klasse.getSchueler().add(neuerUser.getUsername());
+                        schulklassenRepository.save(klasse);
+                    });
                 }
-                PersistenzService.speichernAlles();
-                refreshNutzerGrid();
+                userRepository.save(neuerUser);
+                refreshGrids();
             }
         });
 
         Button addTeacher = new Button("Lehrer anlegen", e -> {
-            if (AuthService.getInstance().register(usernameField.getValue(), passwordField.getValue(), User.Role.TEACHER)) {
-                PersistenzService.speichernAlles();
-                refreshNutzerGrid();
+            if (!usernameField.isEmpty() && !passwordField.isEmpty()) {
+                if (userRepository.existsById(usernameField.getValue())) return;
+
+                User lehrer = new User(usernameField.getValue(), passwordField.getValue(), User.Role.TEACHER);
+                userRepository.save(lehrer);
+                refreshGrids();
             }
         });
 
         TextField neueKlasse = new TextField("Neue Klasse");
         Button addClass = new Button("Klasse erstellen", e -> {
-            KlassenService.getInstance().addKlasse(neueKlasse.getValue());
-            PersistenzService.speichernAlles();
-            klasseBox.setItems(KlassenService.getInstance().getAllKlassenNamen());
-            klassenGrid.setItems(KlassenService.getInstance().getAllKlassenNamen());
-            neueKlasse.clear();
+            if (!neueKlasse.isEmpty()) {
+                Schulklasse klasse = new Schulklasse(neueKlasse.getValue());
+                schulklassenRepository.save(klasse);
+                neueKlasse.clear();
+                refreshGrids();
+            }
         });
 
         klassenGrid = new Grid<>();
         klassenGrid.addColumn(String::toString).setHeader("Klassen");
-        klassenGrid.setItems(KlassenService.getInstance().getAllKlassenNamen());
 
-        Grid<User> nutzerGrid = new Grid<>(User.class, false);
+        nutzerGrid = new Grid<>(User.class, false);
         nutzerGrid.addColumn(User::getUsername).setHeader("Username");
         nutzerGrid.addColumn(u -> u.getRole().name()).setHeader("Rolle");
-        nutzerGrid.setItems(AuthService.getInstance().getAllUsers());
+
+        refreshGrids();
 
         add(usernameField, passwordField, klasseBox, addStudent, addTeacher,
-            neueKlasse, addClass, klassenGrid, nutzerGrid);
+                neueKlasse, addClass, klassenGrid, nutzerGrid);
     }
 
-    private void refreshNutzerGrid() {
-        klasseBox.setItems(KlassenService.getInstance().getAllKlassenNamen());
+    private void refreshGrids() {
+        List<Schulklasse> klassen = schulklassenRepository.findAll();
+        List<String> namen = klassen.stream().map(Schulklasse::getName).toList();
+        klassenGrid.setItems(namen);
+        klasseBox.setItems(namen);
+        nutzerGrid.setItems(userRepository.findAll());
     }
 }

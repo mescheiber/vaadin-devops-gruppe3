@@ -17,10 +17,12 @@ import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.*;
 import com.vaadin.flow.server.StreamResource;
 import com.vaadin.flow.server.VaadinSession;
+import jakarta.annotation.security.RolesAllowed;
 import net.mci.seii.group3.model.User;
 import net.mci.seii.group3.model.Veranstaltung;
 import net.mci.seii.group3.service.*;
 import net.mci.seii.group3.utils.PdfExportService;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.ByteArrayInputStream;
 import java.time.LocalDateTime;
@@ -30,19 +32,34 @@ import java.util.*;
 @Route(value = "veranstaltung/:id", layout = MainLayout.class)
 public class VeranstaltungView extends VerticalLayout implements BeforeEnterObserver {
 
+    private final VeranstaltungsService veranstaltungsService;
+    private final AuthService authService;
+    private final KlassenService klassenService;
+    private final PersistenzService persistenzService;
+
     private Veranstaltung veranstaltung;
     private Grid<String> teilnehmerGrid;
     private final Span exportStatus = new Span();
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss");
+
+    @Autowired
+    public VeranstaltungView(
+            VeranstaltungsService veranstaltungsService,
+            AuthService authService,
+            KlassenService klassenService,
+            PersistenzService persistenzService) {
+        this.veranstaltungsService = veranstaltungsService;
+        this.authService = authService;
+        this.klassenService = klassenService;
+        this.persistenzService = persistenzService;
+    }
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
         String id = event.getRouteParameters().get("id").orElse(null);
         User currentUser = (User) VaadinSession.getCurrent().getAttribute(User.class);
 
-        veranstaltung = VeranstaltungsService.getInstance().getAlleVeranstaltungen().stream()
-                .filter(v -> v.getId().equals(id))
-                .findFirst().orElse(null);
+        veranstaltung = veranstaltungsService.findById(id).orElse(null);
 
         if (veranstaltung == null || currentUser == null) {
             event.forwardTo("");
@@ -56,7 +73,7 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
             if (!veranstaltung.getTeilnahmen().containsKey(currentUser.getUsername())) {
                 TextField kennwort = new TextField("Kennwort");
                 Button teilnehmen = new Button("Teilnehmen", e -> {
-                    boolean erlaubt = VeranstaltungsService.getInstance().prüfenTeilnahme(
+                    boolean erlaubt = veranstaltungsService.prüfenTeilnahme(
                             veranstaltung.getId(), kennwort.getValue(), currentUser.getUsername());
                     if (erlaubt) {
                         Notification.show("Teilnahme erfolgreich!");
@@ -66,7 +83,6 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
                     }
                 });
                 add(kennwort, teilnehmen);
-                teilnehmen.addClassName("button");
             } else {
                 Notification.show("Du hast bereits teilgenommen.");
                 UI.getCurrent().navigate("student");
@@ -74,13 +90,11 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
             return;
         }
 
-        // Überschrift für Admin/Lehrer
-        H3 ueberschrift = new H3("Veranstaltung bearbeiten");
-        ueberschrift.addClassName("title");
-        add(ueberschrift);
+        add(new H3("Veranstaltung bearbeiten"));
 
         HorizontalLayout titleRow = new HorizontalLayout();
         titleRow.setAlignItems(Alignment.BASELINE);
+
         TextField nameField = new TextField("Titel");
         nameField.setValue(veranstaltung.getName());
         DateTimePicker startzeitField = new DateTimePicker("Startzeit");
@@ -92,62 +106,55 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
         Button speichern = new Button("Speichern", e -> {
             veranstaltung.setName(nameField.getValue());
             veranstaltung.setStartzeit(startzeitField.getValue());
-            PersistenzService.speichernAlles();
+            persistenzService.speichernAlles();
             Notification.show("Gespeichert.");
         });
-        speichern.addClassName("button");
+
         titleRow.add(nameField, startzeitField, kennwortField, speichern);
         add(titleRow);
 
         if (currentUser.getRole() == User.Role.ADMIN || currentUser.getRole() == User.Role.TEACHER) {
-            Span lehrerTitel = new Span("Zugewiesene Lehrer:");
             Grid<String> lehrerGrid = new Grid<>();
             lehrerGrid.setHeight("180px");
-            lehrerGrid.addClassName("grid");
             lehrerGrid.addColumn(name -> name).setHeader("Name");
 
             if (currentUser.getRole() == User.Role.ADMIN) {
                 lehrerGrid.addColumn(new ComponentRenderer<>(name -> {
                     Button entfernen = new Button("Entfernen", ev -> {
                         veranstaltung.getZugewieseneLehrer().remove(name);
-                        PersistenzService.speichernAlles();
+                        persistenzService.speichernAlles();
                         lehrerGrid.setItems(veranstaltung.getZugewieseneLehrer());
                     });
-                    entfernen.addClassName("button");
                     return entfernen;
                 })).setHeader("Aktion");
             }
 
             lehrerGrid.setItems(veranstaltung.getZugewieseneLehrer());
-            add(lehrerTitel, lehrerGrid);
+            add(new Span("Zugewiesene Lehrer:"), lehrerGrid);
 
             if (currentUser.getRole() == User.Role.ADMIN) {
                 MultiSelectComboBox<String> lehrerBox = new MultiSelectComboBox<>();
                 lehrerBox.setLabel("Lehrer hinzufügen");
 
+                List<String> rest = authService.getAlleBenutzernamen(User.Role.TEACHER)
+                        .stream().filter(name -> !veranstaltung.getZugewieseneLehrer().contains(name)).toList();
+                lehrerBox.setItems(rest);
+
                 Button hinzufuegen = new Button("Hinzufügen", ev -> {
                     veranstaltung.getZugewieseneLehrer().addAll(lehrerBox.getSelectedItems());
-                    PersistenzService.speichernAlles();
-                    lehrerBox.setItems(AuthService.getInstance()
-                            .getAlleBenutzernamen(User.Role.TEACHER)
-                            .stream().filter(name -> !veranstaltung.getZugewieseneLehrer().contains(name)).toList());
-                    lehrerBox.clear();
+                    persistenzService.speichernAlles();
                     lehrerGrid.setItems(veranstaltung.getZugewieseneLehrer());
+                    lehrerBox.clear();
+                    lehrerBox.setItems(authService.getAlleBenutzernamen(User.Role.TEACHER)
+                            .stream().filter(name -> !veranstaltung.getZugewieseneLehrer().contains(name)).toList());
                 });
-                hinzufuegen.addClassName("button");
 
-                lehrerBox.setItems(AuthService.getInstance()
-                        .getAlleBenutzernamen(User.Role.TEACHER)
-                        .stream().filter(name -> !veranstaltung.getZugewieseneLehrer().contains(name)).toList());
-
-                HorizontalLayout lehrerControls = new HorizontalLayout(lehrerBox, hinzufuegen);
-                lehrerControls.setAlignItems(Alignment.BASELINE);
-                add(lehrerControls);
+                add(new HorizontalLayout(lehrerBox, hinzufuegen));
             }
         }
 
+        // Teilnehmer Grid
         teilnehmerGrid = new Grid<>();
-        teilnehmerGrid.addClassName("grid");
         teilnehmerGrid.setHeight("240px");
         teilnehmerGrid.addColumn(name -> name).setHeader("Name");
         teilnehmerGrid.addColumn(name -> {
@@ -156,16 +163,13 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
         }).setHeader("Teilnahme");
         teilnehmerGrid.addColumn(new ComponentRenderer<>(name -> {
             LocalDateTime teilnahme = veranstaltung.getTeilnahmen().get(name);
-            if (teilnahme != null) {
-                return new Span("✓ Teilnahme");
-            }
+            if (teilnahme != null) return new Span("✓ Teilnahme");
             Button entfernen = new Button("Entfernen", e -> {
                 veranstaltung.getTeilnehmer().remove(name);
                 veranstaltung.getTeilnahmen().remove(name);
                 updateGrid();
-                PersistenzService.speichernAlles();
+                persistenzService.speichernAlles();
             });
-            entfernen.addClassName("button");
             return entfernen;
         })).setHeader("Aktion");
 
@@ -173,7 +177,6 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
         updateGrid();
 
         Button zuweisenDialogButton = new Button("Studenten/Klassen zuweisen", e -> openZuweisDialog());
-        zuweisenDialogButton.addClassName("button");
         add(zuweisenDialogButton);
 
         Button pdfExport = new Button("PDF exportieren", ev -> {
@@ -188,7 +191,7 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
                 Notification.show("Export fehlgeschlagen");
             }
         });
-        pdfExport.addClassName("button");
+
         add(pdfExport);
     }
 
@@ -201,30 +204,28 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
         dialog.setHeaderTitle("Zuweisung von Klassen oder Studenten");
 
         MultiSelectComboBox<String> klassenBox = new MultiSelectComboBox<>("Klassen");
-        klassenBox.setItems(KlassenService.getInstance().getAllKlassenNamen());
+        klassenBox.setItems(klassenService.getAllKlassenNamen());
 
         MultiSelectComboBox<String> studentenBox = new MultiSelectComboBox<>("Studenten");
         Set<String> bereits = veranstaltung.getTeilnehmer();
-        List<String> studenten = AuthService.getInstance()
-                .getAlleBenutzernamen(User.Role.STUDENT)
+        List<String> studenten = authService.getAlleBenutzernamen(User.Role.STUDENT)
                 .stream().filter(s -> !bereits.contains(s)).toList();
         studentenBox.setItems(studenten);
 
         Button zuweisen = new Button("Zuweisen", ev -> {
             studentenBox.getSelectedItems().forEach(s ->
-                    VeranstaltungsService.getInstance().teilnehmerZuweisen(veranstaltung.getId(), s));
+                    veranstaltungsService.teilnehmerZuweisen(veranstaltung.getId(), s));
             klassenBox.getSelectedItems().forEach(k -> {
-                Set<String> schueler = KlassenService.getInstance().getSchuelerEinerKlasse(k);
+                Set<String> schueler = klassenService.getSchuelerEinerKlasse(k);
                 schueler.forEach(s ->
-                        VeranstaltungsService.getInstance().teilnehmerZuweisen(veranstaltung.getId(), s));
+                        veranstaltungsService.teilnehmerZuweisen(veranstaltung.getId(), s));
             });
 
-            PersistenzService.speichernAlles();
+            persistenzService.speichernAlles();
             dialog.close();
             updateGrid();
             Notification.show("Zuweisung erfolgreich");
         });
-        zuweisen.addClassName("button");
 
         dialog.add(klassenBox, studentenBox, new HorizontalLayout(zuweisen));
         dialog.open();

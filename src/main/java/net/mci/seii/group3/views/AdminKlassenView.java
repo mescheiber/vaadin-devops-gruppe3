@@ -8,33 +8,51 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
+import jakarta.annotation.security.RolesAllowed;
+import net.mci.seii.group3.model.Schulklasse;
+import net.mci.seii.group3.model.User;
 import net.mci.seii.group3.service.KlassenService;
-import net.mci.seii.group3.service.PersistenzService;
+import net.mci.seii.group3.repository.UserRepository;
+import net.mci.seii.group3.repository.SchulklassenRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Set;
+import java.util.List;
 
 @Route(value = "admin/klassen", layout = MainLayout.class)
+@RolesAllowed("ADMIN")
 public class AdminKlassenView extends VerticalLayout {
 
+    private final KlassenService klassenService;
     private final Grid<String> schuelerGrid = new Grid<>();
+    private final UserRepository userRepository;
+    private final SchulklassenRepository klassenRepository;
 
 
-    public AdminKlassenView() {
+    @Autowired
+    public AdminKlassenView(KlassenService klassenService,
+                        UserRepository userRepository,
+                        SchulklassenRepository klassenRepository) {
+    this.klassenService = klassenService; // ✅ jetzt korrekt
+    this.userRepository = userRepository;
+    this.klassenRepository = klassenRepository;
+
         setPadding(true);
         setSpacing(true);
 
         // Klassenliste
         Grid<String> klassenGrid = new Grid<>();
         klassenGrid.addColumn(String::toString).setHeader("Klassen");
-        klassenGrid.setItems(KlassenService.getInstance().getAllKlassenNamen());
+        klassenGrid.setItems(klassenService.getAllKlassenNamen());
         klassenGrid.addClassName("grid");
 
         // Auswahl + Anzeige Schüler einer Klasse
         ComboBox<String> klassenAuswahl = new ComboBox<>("Klasse auswählen");
-        klassenAuswahl.setItems(KlassenService.getInstance().getAllKlassenNamen());
+        klassenAuswahl.setItems(klassenService.getAllKlassenNamen());
         klassenAuswahl.addValueChangeListener(e -> {
-            Set<String> schueler = KlassenService.getInstance().getSchuelerEinerKlasse(e.getValue());
-            schuelerGrid.setItems(schueler);
+            List<User> schueler = userRepository.findByRoleAndKlasse(User.Role.STUDENT, e.getValue());
+            schuelerGrid.setItems(schueler.stream().map(User::getUsername).toList());
+
         });
 
         schuelerGrid.addColumn(String::toString).setHeader("Zugewiesene Schüler");
@@ -45,8 +63,7 @@ public class AdminKlassenView extends VerticalLayout {
         neueKlasse.addClassName("form-field");
         Button add = new Button("Klasse erstellen", e -> {
             if (!neueKlasse.isEmpty()) {
-                KlassenService.getInstance().addKlasse(neueKlasse.getValue().trim());
-                PersistenzService.speichernAlles();
+                klassenService.addKlasse(neueKlasse.getValue().trim());
                 neueKlasse.clear();
                 refreshGrids(klassenGrid, klassenAuswahl);
             }
@@ -55,9 +72,7 @@ public class AdminKlassenView extends VerticalLayout {
         add.addClassName("button");
 
         // Zurück zur Admin-Startseite
-        Button zurück = new Button("Zurück", e ->
-                getUI().ifPresent(ui -> ui.navigate("admin"))
-        );
+        Button zurück = new Button("Zurück", e -> getUI().ifPresent(ui -> ui.navigate("admin")));
         zurück.setHeight("40px");
         zurück.addClassName("button");
 
@@ -69,16 +84,16 @@ public class AdminKlassenView extends VerticalLayout {
         ueberschrift.addClassName("title");
 
         add(
-                ueberschrift,
-                aktionLayout,
-                klassenGrid,
-                klassenAuswahl,
-                schuelerGrid
+            ueberschrift,
+            aktionLayout,
+            klassenGrid,
+            klassenAuswahl,
+            schuelerGrid
         );
     }
 
     private void refreshGrids(Grid<String> klassenGrid, ComboBox<String> klassenBox) {
-        var namen = KlassenService.getInstance().getAllKlassenNamen();
+        var namen = klassenService.getAllKlassenNamen();
         klassenGrid.setItems(namen);
         klassenBox.setItems(namen);
     }
