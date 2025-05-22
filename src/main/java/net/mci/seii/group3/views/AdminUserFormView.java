@@ -8,12 +8,14 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
+import jakarta.annotation.security.RolesAllowed;
 import net.mci.seii.group3.model.User;
 import net.mci.seii.group3.repository.SchulklassenRepository;
 import net.mci.seii.group3.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @Route(value = "admin/benutzer/form", layout = MainLayout.class)
+@RolesAllowed("ADMIN")
 public class AdminUserFormView extends VerticalLayout {
 
     private final UserRepository userRepository;

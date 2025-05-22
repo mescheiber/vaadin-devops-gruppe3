@@ -17,6 +17,7 @@ import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.*;
 import com.vaadin.flow.server.StreamResource;
 import com.vaadin.flow.server.VaadinSession;
+import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
 import net.mci.seii.group3.model.User;
 import net.mci.seii.group3.model.Veranstaltung;
@@ -30,6 +31,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Route(value = "veranstaltung/:id", layout = MainLayout.class)
+@PermitAll
 public class VeranstaltungView extends VerticalLayout implements BeforeEnterObserver {
 
     private final VeranstaltungsService veranstaltungsService;
@@ -109,12 +111,14 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
             persistenzService.speichernAlles();
             Notification.show("Gespeichert.");
         });
+        speichern.addClassName("button");
 
         titleRow.add(nameField, startzeitField, kennwortField, speichern);
         add(titleRow);
 
         if (currentUser.getRole() == User.Role.ADMIN || currentUser.getRole() == User.Role.TEACHER) {
             Grid<String> lehrerGrid = new Grid<>();
+            lehrerGrid.addClassName("grid");
             lehrerGrid.setHeight("180px");
             lehrerGrid.addColumn(name -> name).setHeader("Name");
 
@@ -125,6 +129,7 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
                         persistenzService.speichernAlles();
                         lehrerGrid.setItems(veranstaltung.getZugewieseneLehrer());
                     });
+                    entfernen.addClassName("button");
                     return entfernen;
                 })).setHeader("Aktion");
             }
@@ -148,6 +153,7 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
                     lehrerBox.setItems(authService.getAlleBenutzernamen(User.Role.TEACHER)
                             .stream().filter(name -> !veranstaltung.getZugewieseneLehrer().contains(name)).toList());
                 });
+                hinzufuegen.addClassName("button");
 
                 add(new HorizontalLayout(lehrerBox, hinzufuegen));
             }
@@ -155,6 +161,7 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
 
         // Teilnehmer Grid
         teilnehmerGrid = new Grid<>();
+        teilnehmerGrid.addClassName("grid");
         teilnehmerGrid.setHeight("240px");
         teilnehmerGrid.addColumn(name -> name).setHeader("Name");
         teilnehmerGrid.addColumn(name -> {
@@ -170,6 +177,7 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
                 updateGrid();
                 persistenzService.speichernAlles();
             });
+            entfernen.addClassName("button");
             return entfernen;
         })).setHeader("Aktion");
 
@@ -178,6 +186,7 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
 
         Button zuweisenDialogButton = new Button("Studenten/Klassen zuweisen", e -> openZuweisDialog());
         add(zuweisenDialogButton);
+        zuweisenDialogButton.addClassName("button");
 
         Button pdfExport = new Button("PDF exportieren", ev -> {
             try {
@@ -191,7 +200,7 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
                 Notification.show("Export fehlgeschlagen");
             }
         });
-
+        pdfExport.addClassName("button");
         add(pdfExport);
     }
 

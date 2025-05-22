@@ -23,25 +23,9 @@ public class AuthService {
                 .orElse(null);
     }
 
-    public boolean register(String username, String password, User.Role role) {
-        if (userRepository.existsById(username)) return false;
-        User user = new User(username, password, role);
-        userRepository.save(user);
-        return true;
-    }
-
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
-    }
-
-    public User getUserByName(String username) {
-        return userRepository.findByUsername(username).orElse(null);
-    }
-    
     public List<String> getAlleBenutzernamen(User.Role rolle) {
-    return userRepository.findByRole(rolle).stream()
-        .map(User::getUsername)
-        .toList();
-}
-
+        return userRepository.findByRole(rolle).stream()
+                .map(User::getUsername)
+                .toList();
+    }
 }

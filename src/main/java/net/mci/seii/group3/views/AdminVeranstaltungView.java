@@ -20,7 +20,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Route(value = "admin/veranstaltungen", layout = MainLayout.class)
-@RolesAllowed("ADMIN")
+@RolesAllowed({"ADMIN", "TEACHER", "STUDENT"})
 public class AdminVeranstaltungView extends VerticalLayout {
 
     private final Grid<Veranstaltung> veranstaltungenGrid = new Grid<>();
@@ -92,10 +92,8 @@ public class AdminVeranstaltungView extends VerticalLayout {
 
         refreshGrid();
 
-        Button zurück = new Button("Zurück", e -> getUI().ifPresent(ui -> ui.navigate("admin")));
-        zurück.addClassName("button");
 
-        add(ueberschrift, formularLayout, veranstaltungenGrid, zurück);
+        add(ueberschrift, formularLayout, veranstaltungenGrid);
     }
 
     private void refreshGrid() {

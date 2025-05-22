@@ -6,6 +6,7 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
+import jakarta.annotation.security.RolesAllowed;
 import net.mci.seii.group3.model.Schulklasse;
 import net.mci.seii.group3.model.User;
 import net.mci.seii.group3.repository.SchulklassenRepository;
@@ -15,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.util.List;
 
 @Route(value = "admin_old", layout = MainLayout.class)
+@RolesAllowed("ADMIN")
 public class AdminView extends VerticalLayout {
 
     private final UserRepository userRepository;

@@ -6,6 +6,7 @@ import com.vaadin.flow.component.orderedlayout.FlexLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
+import jakarta.annotation.security.RolesAllowed;
 import com.vaadin.flow.router.Route;
 import net.mci.seii.group3.model.User;
 import net.mci.seii.group3.repository.UserRepository;
@@ -13,6 +14,7 @@ import net.mci.seii.group3.service.KlassenService;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @Route(value = "admin/benutzer/edit/:username", layout = MainLayout.class)
+@RolesAllowed("ADMIN")
 public class AdminUserEditView extends VerticalLayout implements BeforeEnterObserver {
 
     private final Grid<User> userGrid = new Grid<>(User.class, false);

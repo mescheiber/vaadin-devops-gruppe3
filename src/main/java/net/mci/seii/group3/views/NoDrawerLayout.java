@@ -38,7 +38,7 @@ public class NoDrawerLayout extends AppLayout implements RouterLayout {
         Span leftSpacer = new Span();
         Span rightSpacer = new Span();
 
-        HorizontalLayout header = new HorizontalLayout(leftSpacer, branding, rightSpacer);
+        HorizontalLayout header = new HorizontalLayout(leftSpacer, rightSpacer);
         header.setWidthFull();
         header.setAlignItems(FlexComponent.Alignment.CENTER);
         header.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);

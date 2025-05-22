@@ -23,10 +23,15 @@ import net.mci.seii.group3.model.User;
 @PermitAll
 public class MainLayout extends AppLayout implements BeforeEnterObserver {
 
+
+
     public MainLayout() {
+        User user = VaadinSession.getCurrent().getAttribute(User.class);
         createHeader();
-        createDrawer();
+        createDrawer(user);
         getElement().setAttribute("overlay", "");
+        System.out.println("User in session (MainLayout): " + user);
+        System.out.println("Session ID: " + VaadinSession.getCurrent().getSession().getId());
     }
 
     @Override
@@ -42,11 +47,11 @@ public class MainLayout extends AppLayout implements BeforeEnterObserver {
 
         Button logoutButton = new Button("Logout", e -> {
             VaadinSession.getCurrent().close(); // Benutzer-Session invalidieren
-            UI.getCurrent().navigate("");
+            UI.getCurrent().navigate("login");
         });
-        logoutButton.addClassName("logoutButton");
+        logoutButton.addClassName("button");
 
-        Image logo = new Image("images/logo_app.png", "Logo");
+        Image logo = new Image("images/MCI_Logo.png", "Logo");
         logo.setHeight("40px");
         logo.getStyle().set("border-radius", "8px");
 
@@ -69,25 +74,59 @@ public class MainLayout extends AppLayout implements BeforeEnterObserver {
         header.setFlexGrow(1, rightSpacer);
 
         addToNavbar(header);
+        getElement().executeJs(
+                "var link=document.createElement('link');" +
+                        "link.rel='icon';" +
+                        "link.href='favicon.ico';" +
+                        "document.head.appendChild(link);"
+        );
+
     }
 
-    private void createDrawer() {
+    private void createDrawer(User user) {
+        System.out.println("Session ID in drawer: " + VaadinSession.getCurrent().getSession().getId());
         H1 drawerTitle = new H1("Navigation");
         drawerTitle.addClassName("drawer-title");
 
+        RouterLink profile = new RouterLink("LandingPage", LandingPage.class);
         RouterLink benutzer = new RouterLink("Benutzerverwaltung", AdminUserView.class);
         RouterLink klassen = new RouterLink("Klassenverwaltung", AdminKlassenView.class);
         RouterLink veranstaltungen = new RouterLink("Veranstaltungen", AdminVeranstaltungView.class);
 
+        profile.setHighlightCondition(HighlightConditions.sameLocation());
         benutzer.setHighlightCondition(HighlightConditions.sameLocation());
         klassen.setHighlightCondition(HighlightConditions.sameLocation());
         veranstaltungen.setHighlightCondition(HighlightConditions.sameLocation());
 
+        profile.addClassName("drawer-link");
         benutzer.addClassName("drawer-link");
         klassen.addClassName("drawer-link");
         veranstaltungen.addClassName("drawer-link");
 
-        VerticalLayout drawerContent = new VerticalLayout(drawerTitle, benutzer, klassen, veranstaltungen);
+
+        VerticalLayout drawerContent = new VerticalLayout();
+        drawerContent.addClassName("drawer-content");
+
+        drawerContent.add(drawerTitle);
+
+        // Always accessible
+        drawerContent.add(profile);
+
+        if (user != null) {
+            switch (user.getRole()) {
+                case ADMIN -> {
+                    drawerContent.add(benutzer, klassen, veranstaltungen);
+                }
+                case TEACHER -> {
+                    drawerContent.add(veranstaltungen);
+                }
+                // STUDENTs get no extra links
+                default -> {
+                    drawerContent.add(veranstaltungen);
+                }
+            }
+        }
+
         drawerContent.addClassName("drawer-content");
 
         addToDrawer(drawerContent);

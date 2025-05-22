@@ -79,6 +79,7 @@ public class LandingPage extends VerticalLayout {
         PasswordField newPass = new PasswordField("Neues Passwort");
 
         Button changePass = new Button("Passwort ändern");
+        changePass.addClassName("button");
         Paragraph status = new Paragraph();
 
         changePass.addClickListener(e -> {

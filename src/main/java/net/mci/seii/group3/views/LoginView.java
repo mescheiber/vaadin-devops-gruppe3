@@ -8,14 +8,21 @@ import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 import jakarta.annotation.security.PermitAll;
 import net.mci.seii.group3.model.User;
 import net.mci.seii.group3.service.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 
-@Route(value = "", layout = NoDrawerLayout.class)
+import java.util.List;
+
+@Route(value = "login", layout = NoDrawerLayout.class)
+@PageTitle("Login")
 @PermitAll
 public class LoginView extends VerticalLayout {
 
@@ -41,21 +48,36 @@ public class LoginView extends VerticalLayout {
 
         Button login = new Button("Login", e -> {
             User user = authService.login(username.getValue(), password.getValue());
+            System.out.println("Login attempt: " + username.getValue());
 
             if (user != null) {
+                System.out.println("Logged in: " + user.getUsername() + ", Role: " + user.getRole());
                 VaadinSession.getCurrent().setAttribute(User.class, user);
-                switch (user.getRole()) {
-                    case ADMIN -> getUI().ifPresent(ui -> ui.navigate("home"));
-                    case TEACHER -> getUI().ifPresent(ui -> ui.navigate("lehrer"));
-                    case STUDENT -> getUI().ifPresent(ui -> ui.navigate("student"));
-                }
+
+                UsernamePasswordAuthenticationToken authToken =
+                        new UsernamePasswordAuthenticationToken(
+                                user.getUsername(),
+                                null,
+                                List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()))
+                        );
+                SecurityContextHolder.getContext().setAuthentication(authToken);
+                VaadinSession.getCurrent().getSession()
+                        .setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
+
+
+
+                getUI().ifPresent(ui -> ui.navigate("home"));
+
             } else {
                 status.setText("Login fehlgeschlagen");
+                System.out.println("Login failed");
             }
         });
 
         VerticalLayout branding = new VerticalLayout(logo, title);
         branding.setAlignItems(FlexComponent.Alignment.CENTER);
+
+        login.addClassName("button");
 
         VerticalLayout form = new VerticalLayout(branding, username, password, login, status);
         form.setWidth("300px");

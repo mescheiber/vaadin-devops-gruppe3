@@ -9,14 +9,12 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
-import net.mci.seii.group3.model.Schulklasse;
 import net.mci.seii.group3.model.User;
 import net.mci.seii.group3.service.KlassenService;
 import net.mci.seii.group3.repository.UserRepository;
 import net.mci.seii.group3.repository.SchulklassenRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.Set;
 import java.util.List;
 
 @Route(value = "admin/klassen", layout = MainLayout.class)
@@ -25,17 +23,13 @@ public class AdminKlassenView extends VerticalLayout {
 
     private final KlassenService klassenService;
     private final Grid<String> schuelerGrid = new Grid<>();
-    private final UserRepository userRepository;
-    private final SchulklassenRepository klassenRepository;
 
 
     @Autowired
     public AdminKlassenView(KlassenService klassenService,
                         UserRepository userRepository,
                         SchulklassenRepository klassenRepository) {
-    this.klassenService = klassenService; // ✅ jetzt korrekt
-    this.userRepository = userRepository;
-    this.klassenRepository = klassenRepository;
+    this.klassenService = klassenService;
 
         setPadding(true);
         setSpacing(true);
@@ -71,12 +65,9 @@ public class AdminKlassenView extends VerticalLayout {
         add.setHeight("40px");
         add.addClassName("button");
 
-        // Zurück zur Admin-Startseite
-        Button zurück = new Button("Zurück", e -> getUI().ifPresent(ui -> ui.navigate("admin")));
-        zurück.setHeight("40px");
-        zurück.addClassName("button");
 
-        HorizontalLayout aktionLayout = new HorizontalLayout(neueKlasse, add, zurück);
+
+        HorizontalLayout aktionLayout = new HorizontalLayout(neueKlasse, add);
         aktionLayout.setAlignItems(Alignment.BASELINE);
         aktionLayout.setSpacing(true);
 
