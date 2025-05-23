@@ -39,6 +39,8 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
     private final VeranstaltungsRepository veranstaltungsRepository;
     private final AuthService authService;
     private final KlassenService klassenService;
+    private MultiSelectComboBox<String> lehrerBox;
+
 
     private Veranstaltung veranstaltung;
     private Grid<String> teilnehmerGrid;
@@ -64,7 +66,6 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
         User currentUser = (User) VaadinSession.getCurrent().getAttribute(User.class);
 
         veranstaltung = veranstaltungsService.findById(id).orElse(null);
-
         if (veranstaltung == null || currentUser == null) {
             event.forwardTo("");
             return;
@@ -125,27 +126,30 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
             lehrerGrid.setHeight("180px");
             lehrerGrid.addColumn(name -> name).setHeader("Name");
 
+            lehrerGrid.setItems(veranstaltung.getZugewieseneLehrer());
+            add(new Span("Zugewiesene Lehrer:"), lehrerGrid);
             if (currentUser.getRole() == User.Role.ADMIN) {
                 lehrerGrid.addColumn(new ComponentRenderer<>(name -> {
                     Button entfernen = new Button("Entfernen", ev -> {
                         veranstaltung.getZugewieseneLehrer().remove(name);
                         veranstaltungsRepository.save(veranstaltung);
+                        veranstaltung = veranstaltungsService.findById(veranstaltung.getId()).orElseThrow();
                         lehrerGrid.setItems(veranstaltung.getZugewieseneLehrer());
+                        lehrerBox.setItems(authService.getAlleBenutzernamen(User.Role.TEACHER).stream()
+                        .filter(n -> !veranstaltung.getZugewieseneLehrer().contains(n)).toList());
                     });
                     entfernen.addClassName("button");
                     return entfernen;
                 })).setHeader("Aktion");
             }
-
-            lehrerGrid.setItems(veranstaltung.getZugewieseneLehrer());
-            add(new Span("Zugewiesene Lehrer:"), lehrerGrid);
-
             if (currentUser.getRole() == User.Role.ADMIN) {
-                MultiSelectComboBox<String> lehrerBox = new MultiSelectComboBox<>();
+                lehrerBox = new MultiSelectComboBox<>();
                 lehrerBox.setLabel("Lehrer hinzufügen");
 
                 List<String> rest = authService.getAlleBenutzernamen(User.Role.TEACHER)
-                        .stream().filter(name -> !veranstaltung.getZugewieseneLehrer().contains(name)).toList();
+                        .stream()
+                        .filter(name -> !veranstaltung.getZugewieseneLehrer().contains(name))
+                        .toList();
                 lehrerBox.setItems(rest);
 
                 Button hinzufuegen = new Button("Hinzufügen", ev -> {
@@ -158,10 +162,14 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
                 });
                 hinzufuegen.addClassName("button");
 
-                add(new HorizontalLayout(lehrerBox, hinzufuegen));
-            }
-        }
+                HorizontalLayout lehrerRow = new HorizontalLayout(lehrerBox, hinzufuegen);
+                lehrerRow.setAlignItems(Alignment.BASELINE);
+                add(lehrerRow);
 
+            }
+            
+        }
+        
         // Teilnehmer Grid
         teilnehmerGrid = new Grid<>();
         teilnehmerGrid.addClassName("grid");
@@ -179,6 +187,8 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
             Button entfernen = new Button("Entfernen", e -> {
                 veranstaltung.getTeilnehmer().remove(name);
                 veranstaltung.getTeilnahmen().remove(name);
+                veranstaltungsRepository.save(veranstaltung); // ❗ Speichern nicht vergessen
+                veranstaltung = veranstaltungsService.findById(veranstaltung.getId()).orElseThrow(); // neu laden
                 updateGrid();
             });
             entfernen.addClassName("button");
@@ -209,6 +219,7 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
     }
 
     private void updateGrid() {
+        veranstaltung = veranstaltungsService.findById(veranstaltung.getId()).orElseThrow();
         teilnehmerGrid.setItems(veranstaltung.getTeilnehmer());
     }
 
@@ -226,13 +237,18 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
         studentenBox.setItems(studenten);
 
         Button zuweisen = new Button("Zuweisen", ev -> {
+            Set<String> hinzu = new HashSet<>();
+            
             studentenBox.getSelectedItems().forEach(s
-                    -> veranstaltungsService.teilnehmerZuweisen(veranstaltung.getId(), s));
+                    -> hinzu.add(s));
             klassenBox.getSelectedItems().forEach(k -> {
                 Set<String> schueler = klassenService.getSchuelerEinerKlasse(k);
-                schueler.forEach(s
-                        -> veranstaltungsService.teilnehmerZuweisen(veranstaltung.getId(), s));
+                hinzu.addAll(schueler);
             });
+            
+        veranstaltung.getTeilnehmer().addAll(hinzu);
+        veranstaltungsRepository.save(veranstaltung);
+        veranstaltung = veranstaltungsService.findById(veranstaltung.getId()).orElseThrow();
 
             dialog.close();
             updateGrid();

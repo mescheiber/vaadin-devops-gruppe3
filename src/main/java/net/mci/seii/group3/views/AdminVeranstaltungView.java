@@ -17,7 +17,7 @@ import net.mci.seii.group3.model.Veranstaltung;
 import net.mci.seii.group3.repository.UserRepository;
 import net.mci.seii.group3.repository.VeranstaltungsRepository;
 
-import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Route(value = "admin/veranstaltungen", layout = MainLayout.class)
@@ -28,6 +28,7 @@ public class AdminVeranstaltungView extends VerticalLayout {
     private final VeranstaltungsRepository veranstaltungsRepository;
     private final UserRepository userRepository;
     private final User currentUser;
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
 
     public AdminVeranstaltungView(VeranstaltungsRepository veranstaltungsRepository,
             UserRepository userRepository) {
@@ -102,7 +103,7 @@ public class AdminVeranstaltungView extends VerticalLayout {
         if (currentUser.getRole() != User.Role.STUDENT) {
             veranstaltungenGrid.addColumn(Veranstaltung::getKennwort).setHeader("Kennwort");
         }
-        veranstaltungenGrid.addColumn(v -> v.getStartzeit().toString()).setHeader("Startzeit");
+        veranstaltungenGrid.addColumn(v -> v.getStartzeit().format(FORMATTER)).setHeader("Startzeit");
         if (currentUser.getRole() != User.Role.STUDENT) {
             veranstaltungenGrid.addColumn(v -> v.getTeilnehmer().size()).setHeader("Teilnehmer");
         }
