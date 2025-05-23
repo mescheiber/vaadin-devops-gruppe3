@@ -8,6 +8,7 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
 import net.mci.seii.group3.model.User;
+import net.mci.seii.group3.service.KlassenService;
 import net.mci.seii.group3.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -17,12 +18,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 public class AdminUserView extends VerticalLayout {
 
     private final UserService userService;
+    private final KlassenService klassenService;
     private final Grid<User> grid = new Grid<>(User.class, false);
     private final AdminUserForm form;
 
     @Autowired
-    public AdminUserView(UserService userService) {
+    public AdminUserView(UserService userService, KlassenService klassenService) {
         this.userService = userService;
+        this.klassenService = klassenService;
 
         setSizeFull();
         setPadding(true);
@@ -42,7 +45,8 @@ public class AdminUserView extends VerticalLayout {
         addUser.addClassName("button");
         addUser.getStyle().set("margin-bottom", "1rem");
 
-        form = new AdminUserForm(userService);
+
+        form = new AdminUserForm(userService, klassenService);
         form.setWidth("400px");
         form.setVisible(false);
         form.addSaveListener(this::saveUser);

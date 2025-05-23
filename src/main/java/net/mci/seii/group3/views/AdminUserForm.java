@@ -11,6 +11,7 @@ import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
 import net.mci.seii.group3.model.User;
+import net.mci.seii.group3.service.KlassenService;
 import net.mci.seii.group3.service.UserService;
 
 public class AdminUserForm extends FormLayout {
@@ -18,7 +19,7 @@ public class AdminUserForm extends FormLayout {
     private final TextField username = new TextField("Benutzername");
     private final PasswordField password = new PasswordField("Passwort");
     private final ComboBox<User.Role> role = new ComboBox<>("Rolle");
-    private final TextField klasse = new TextField("Klasse (optional)");
+    private final ComboBox<String> klasse = new ComboBox<>("Klasse (optional)");
 
     private final Button save = new Button("Speichern");
     private final Button cancel = new Button("Abbrechen");
@@ -55,8 +56,10 @@ public class AdminUserForm extends FormLayout {
         public User getUser() { return user; }
     }
 
-    public AdminUserForm(UserService userService) {
+    public AdminUserForm(UserService userService, KlassenService klassenService) {
         role.setItems(User.Role.values());
+        klasse.setItems(klassenService.getAllKlassenNamen());
+
 
         binder.bindInstanceFields(this);
 

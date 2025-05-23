@@ -26,7 +26,7 @@ public class AdminUserEditView extends VerticalLayout implements BeforeEnterObse
     public AdminUserEditView(KlassenService klassenService, UserRepository userRepository) {
         this.klassenService = klassenService;
         this.userRepository = userRepository;
-        this.userForm = new UserForm(klassenService); // ✅ korrekt initialisiert
+        this.userForm = new UserForm(klassenService); // korrekt initialisiert
 
         setSizeFull();
         userForm.setVisible(false);
