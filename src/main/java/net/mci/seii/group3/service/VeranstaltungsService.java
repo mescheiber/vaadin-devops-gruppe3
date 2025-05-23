@@ -1,6 +1,7 @@
 package net.mci.seii.group3.service;
 
 import net.mci.seii.group3.model.Veranstaltung;
+import net.mci.seii.group3.utils.NetzwerkChecker;
 import net.mci.seii.group3.repository.VeranstaltungsRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -32,15 +33,48 @@ public class VeranstaltungsService {
         return veranstaltungsRepository.save(v);
     }
 
-    public boolean prüfenTeilnahme(String veranstaltungsId, String kennwort, String benutzer) {
-        var opt = veranstaltungsRepository.findById(veranstaltungsId);
-        if (opt.isEmpty()) return false;
-        Veranstaltung v = opt.get();
-        if (!v.getKennwort().equals(kennwort)) return false;
-        v.getTeilnahmen().put(benutzer, LocalDateTime.now());
-        veranstaltungsRepository.save(v);
-        return true;
+    public boolean prüfenTeilnahme(String veranstaltungsId, String kennwort, String username, String ipAdresse) {
+    Optional<Veranstaltung> optional = veranstaltungsRepository.findById(veranstaltungsId);
+    if (optional.isEmpty()) {
+        System.out.println("❌ Veranstaltung nicht gefunden: " + veranstaltungsId);
+        return false;
     }
+
+    Veranstaltung v = optional.get();
+    LocalDateTime now = LocalDateTime.now();
+
+    // Zeitprüfung
+    if (now.isBefore(v.getStartzeit().minusMinutes(30)) || now.isAfter(v.getStartzeit().plusMinutes(60))) {
+        System.out.println("❌ Zeitfenster ungültig. Jetzt: " + now + ", Start: " + v.getStartzeit());
+        return false;
+    }
+
+    // Netzwerkprüfung
+    if (!NetzwerkChecker.istImUniNetz(ipAdresse)) {
+        System.out.println("❌ IP-Adresse nicht erlaubt: " + ipAdresse);
+        return false;
+    }
+
+    // Kennwort prüfen
+    if (!v.getKennwort().equalsIgnoreCase(kennwort)) {
+        System.out.println("❌ Falsches Kennwort: " + kennwort + " vs " + v.getKennwort());
+        return false;
+    }
+
+    // Bereits teilgenommen?
+    if (v.getTeilnahmen().containsKey(username)) {
+        System.out.println("❌ User hat bereits teilgenommen: " + username);
+        return false;
+    }
+
+    // Teilnahme erfolgreich
+    v.getTeilnehmer().add(username);
+    v.getTeilnahmen().put(username, now);
+    veranstaltungsRepository.save(v);
+    System.out.println("✅ Teilnahme erfolgreich für: " + username);
+    return true;
+}
+
 
     public void teilnehmerZuweisen(String veranstaltungsId, String username) {
         veranstaltungsRepository.findById(veranstaltungsId).ifPresent(v -> {
@@ -49,9 +83,8 @@ public class VeranstaltungsService {
         });
     }
 
-    
     public Optional<Veranstaltung> findById(String id) {
-    return veranstaltungsRepository.findById(id);
-}
+        return veranstaltungsRepository.findById(id);
+    }
 
 }

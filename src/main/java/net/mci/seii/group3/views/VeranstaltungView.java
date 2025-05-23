@@ -30,6 +30,8 @@ import java.io.ByteArrayInputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import jakarta.servlet.http.HttpServletRequest;
+import com.vaadin.flow.server.VaadinRequest;
 
 @Route(value = "veranstaltung/:id", layout = MainLayout.class)
 @PermitAll
@@ -40,7 +42,6 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
     private final AuthService authService;
     private final KlassenService klassenService;
     private MultiSelectComboBox<String> lehrerBox;
-
 
     private Veranstaltung veranstaltung;
     private Grid<String> teilnehmerGrid;
@@ -78,8 +79,11 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
             if (!veranstaltung.getTeilnahmen().containsKey(currentUser.getUsername())) {
                 TextField kennwort = new TextField("Kennwort");
                 Button teilnehmen = new Button("Teilnehmen", e -> {
+                    HttpServletRequest request = (HttpServletRequest) VaadinRequest.getCurrent();
+                    String ipAdresse = request.getRemoteAddr();
+
                     boolean erlaubt = veranstaltungsService.prüfenTeilnahme(
-                            veranstaltung.getId(), kennwort.getValue(), currentUser.getUsername());
+                            veranstaltung.getId(), kennwort.getValue(), currentUser.getUsername(), ipAdresse);
                     if (erlaubt) {
                         Notification.show("Teilnahme erfolgreich!");
                         UI.getCurrent().navigate("student");
@@ -136,7 +140,7 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
                         veranstaltung = veranstaltungsService.findById(veranstaltung.getId()).orElseThrow();
                         lehrerGrid.setItems(veranstaltung.getZugewieseneLehrer());
                         lehrerBox.setItems(authService.getAlleBenutzernamen(User.Role.TEACHER).stream()
-                        .filter(n -> !veranstaltung.getZugewieseneLehrer().contains(n)).toList());
+                                .filter(n -> !veranstaltung.getZugewieseneLehrer().contains(n)).toList());
                     });
                     entfernen.addClassName("button");
                     return entfernen;
@@ -167,9 +171,9 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
                 add(lehrerRow);
 
             }
-            
+
         }
-        
+
         // Teilnehmer Grid
         teilnehmerGrid = new Grid<>();
         teilnehmerGrid.addClassName("grid");
@@ -238,17 +242,17 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
 
         Button zuweisen = new Button("Zuweisen", ev -> {
             Set<String> hinzu = new HashSet<>();
-            
+
             studentenBox.getSelectedItems().forEach(s
                     -> hinzu.add(s));
             klassenBox.getSelectedItems().forEach(k -> {
                 Set<String> schueler = klassenService.getSchuelerEinerKlasse(k);
                 hinzu.addAll(schueler);
             });
-            
-        veranstaltung.getTeilnehmer().addAll(hinzu);
-        veranstaltungsRepository.save(veranstaltung);
-        veranstaltung = veranstaltungsService.findById(veranstaltung.getId()).orElseThrow();
+
+            veranstaltung.getTeilnehmer().addAll(hinzu);
+            veranstaltungsRepository.save(veranstaltung);
+            veranstaltung = veranstaltungsService.findById(veranstaltung.getId()).orElseThrow();
 
             dialog.close();
             updateGrid();
