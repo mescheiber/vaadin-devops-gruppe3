@@ -21,6 +21,7 @@ import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
 import net.mci.seii.group3.model.User;
 import net.mci.seii.group3.model.Veranstaltung;
+import net.mci.seii.group3.repository.VeranstaltungsRepository;
 import net.mci.seii.group3.service.*;
 import net.mci.seii.group3.utils.PdfExportService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +36,7 @@ import java.util.*;
 public class VeranstaltungView extends VerticalLayout implements BeforeEnterObserver {
 
     private final VeranstaltungsService veranstaltungsService;
+    private final VeranstaltungsRepository veranstaltungsRepository;
     private final AuthService authService;
     private final KlassenService klassenService;
 
@@ -46,10 +48,12 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
     @Autowired
     public VeranstaltungView(
             VeranstaltungsService veranstaltungsService,
+            VeranstaltungsRepository veranstaltungsRepository,
             AuthService authService,
             KlassenService klassenService,
             PersistenzService persistenzService) {
         this.veranstaltungsService = veranstaltungsService;
+        this.veranstaltungsRepository = veranstaltungsRepository; // 🛠️ HIER ergänzt
         this.authService = authService;
         this.klassenService = klassenService;
     }
@@ -105,8 +109,9 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
 
         Button speichern = new Button("Speichern", e -> {
             veranstaltung.setName(nameField.getValue());
+            veranstaltungsRepository.save(veranstaltung);
             veranstaltung.setStartzeit(startzeitField.getValue());
-            
+
             Notification.show("Gespeichert.");
         });
         speichern.addClassName("button");
@@ -124,7 +129,7 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
                 lehrerGrid.addColumn(new ComponentRenderer<>(name -> {
                     Button entfernen = new Button("Entfernen", ev -> {
                         veranstaltung.getZugewieseneLehrer().remove(name);
-                        
+                        veranstaltungsRepository.save(veranstaltung);
                         lehrerGrid.setItems(veranstaltung.getZugewieseneLehrer());
                     });
                     entfernen.addClassName("button");
@@ -145,7 +150,7 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
 
                 Button hinzufuegen = new Button("Hinzufügen", ev -> {
                     veranstaltung.getZugewieseneLehrer().addAll(lehrerBox.getSelectedItems());
-                    
+                    veranstaltungsRepository.save(veranstaltung);
                     lehrerGrid.setItems(veranstaltung.getZugewieseneLehrer());
                     lehrerBox.clear();
                     lehrerBox.setItems(authService.getAlleBenutzernamen(User.Role.TEACHER)
@@ -168,7 +173,9 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
         }).setHeader("Teilnahme");
         teilnehmerGrid.addColumn(new ComponentRenderer<>(name -> {
             LocalDateTime teilnahme = veranstaltung.getTeilnahmen().get(name);
-            if (teilnahme != null) return new Span("✓ Teilnahme");
+            if (teilnahme != null) {
+                return new Span("✓ Teilnahme");
+            }
             Button entfernen = new Button("Entfernen", e -> {
                 veranstaltung.getTeilnehmer().remove(name);
                 veranstaltung.getTeilnahmen().remove(name);
@@ -219,15 +226,14 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
         studentenBox.setItems(studenten);
 
         Button zuweisen = new Button("Zuweisen", ev -> {
-            studentenBox.getSelectedItems().forEach(s ->
-                    veranstaltungsService.teilnehmerZuweisen(veranstaltung.getId(), s));
+            studentenBox.getSelectedItems().forEach(s
+                    -> veranstaltungsService.teilnehmerZuweisen(veranstaltung.getId(), s));
             klassenBox.getSelectedItems().forEach(k -> {
                 Set<String> schueler = klassenService.getSchuelerEinerKlasse(k);
-                schueler.forEach(s ->
-                        veranstaltungsService.teilnehmerZuweisen(veranstaltung.getId(), s));
+                schueler.forEach(s
+                        -> veranstaltungsService.teilnehmerZuweisen(veranstaltung.getId(), s));
             });
 
-          
             dialog.close();
             updateGrid();
             Notification.show("Zuweisung erfolgreich");
