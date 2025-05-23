@@ -49,9 +49,6 @@ public class VeranstaltungsService {
         });
     }
 
-    public void speichernAlles() {
-        // ggf. leer lassen – Daten werden ohnehin in DB gespeichert
-    }
     
     public Optional<Veranstaltung> findById(String id) {
     return veranstaltungsRepository.findById(id);

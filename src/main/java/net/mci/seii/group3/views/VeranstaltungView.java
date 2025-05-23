@@ -37,7 +37,6 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
     private final VeranstaltungsService veranstaltungsService;
     private final AuthService authService;
     private final KlassenService klassenService;
-    private final PersistenzService persistenzService;
 
     private Veranstaltung veranstaltung;
     private Grid<String> teilnehmerGrid;
@@ -53,7 +52,6 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
         this.veranstaltungsService = veranstaltungsService;
         this.authService = authService;
         this.klassenService = klassenService;
-        this.persistenzService = persistenzService;
     }
 
     @Override
@@ -108,7 +106,7 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
         Button speichern = new Button("Speichern", e -> {
             veranstaltung.setName(nameField.getValue());
             veranstaltung.setStartzeit(startzeitField.getValue());
-            persistenzService.speichernAlles();
+            
             Notification.show("Gespeichert.");
         });
         speichern.addClassName("button");
@@ -126,7 +124,7 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
                 lehrerGrid.addColumn(new ComponentRenderer<>(name -> {
                     Button entfernen = new Button("Entfernen", ev -> {
                         veranstaltung.getZugewieseneLehrer().remove(name);
-                        persistenzService.speichernAlles();
+                        
                         lehrerGrid.setItems(veranstaltung.getZugewieseneLehrer());
                     });
                     entfernen.addClassName("button");
@@ -147,7 +145,7 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
 
                 Button hinzufuegen = new Button("Hinzufügen", ev -> {
                     veranstaltung.getZugewieseneLehrer().addAll(lehrerBox.getSelectedItems());
-                    persistenzService.speichernAlles();
+                    
                     lehrerGrid.setItems(veranstaltung.getZugewieseneLehrer());
                     lehrerBox.clear();
                     lehrerBox.setItems(authService.getAlleBenutzernamen(User.Role.TEACHER)
@@ -175,7 +173,6 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
                 veranstaltung.getTeilnehmer().remove(name);
                 veranstaltung.getTeilnahmen().remove(name);
                 updateGrid();
-                persistenzService.speichernAlles();
             });
             entfernen.addClassName("button");
             return entfernen;
@@ -230,7 +227,7 @@ public class VeranstaltungView extends VerticalLayout implements BeforeEnterObse
                         veranstaltungsService.teilnehmerZuweisen(veranstaltung.getId(), s));
             });
 
-            persistenzService.speichernAlles();
+          
             dialog.close();
             updateGrid();
             Notification.show("Zuweisung erfolgreich");
