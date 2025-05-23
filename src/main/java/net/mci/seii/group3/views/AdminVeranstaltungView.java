@@ -99,9 +99,13 @@ public class AdminVeranstaltungView extends VerticalLayout {
         // Grid konfigurieren
         veranstaltungenGrid.addColumn(Veranstaltung::getName).setHeader("Titel");
         veranstaltungenGrid.addColumn(Veranstaltung::getLehrer).setHeader("Lehrer");
-        veranstaltungenGrid.addColumn(Veranstaltung::getKennwort).setHeader("Kennwort");
+        if (currentUser.getRole() != User.Role.STUDENT) {
+            veranstaltungenGrid.addColumn(Veranstaltung::getKennwort).setHeader("Kennwort");
+        }
         veranstaltungenGrid.addColumn(v -> v.getStartzeit().toString()).setHeader("Startzeit");
-        veranstaltungenGrid.addColumn(v -> v.getTeilnehmer().size()).setHeader("Teilnehmer");
+        if (currentUser.getRole() != User.Role.STUDENT) {
+            veranstaltungenGrid.addColumn(v -> v.getTeilnehmer().size()).setHeader("Teilnehmer");
+        }
 
         veranstaltungenGrid.asSingleSelect().addValueChangeListener(e -> {
             Veranstaltung v = e.getValue();
