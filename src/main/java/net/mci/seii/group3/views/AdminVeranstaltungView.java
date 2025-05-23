@@ -10,6 +10,7 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.server.VaadinSession;
 import jakarta.annotation.security.RolesAllowed;
 import net.mci.seii.group3.model.User;
 import net.mci.seii.group3.model.Veranstaltung;
@@ -26,11 +27,13 @@ public class AdminVeranstaltungView extends VerticalLayout {
     private final Grid<Veranstaltung> veranstaltungenGrid = new Grid<>();
     private final VeranstaltungsRepository veranstaltungsRepository;
     private final UserRepository userRepository;
+    private final User currentUser;
 
     public AdminVeranstaltungView(VeranstaltungsRepository veranstaltungsRepository,
-                                  UserRepository userRepository) {
+            UserRepository userRepository) {
         this.veranstaltungsRepository = veranstaltungsRepository;
         this.userRepository = userRepository;
+        this.currentUser = (User) VaadinSession.getCurrent().getAttribute(User.class);
 
         setPadding(true);
         setSpacing(true);
@@ -41,40 +44,57 @@ public class AdminVeranstaltungView extends VerticalLayout {
         H3 ueberschrift = new H3("Veranstaltungsverwaltung");
         ueberschrift.addClassName("title");
 
-        // Eingabefelder
+        // === Formularfelder initialisieren ===
         TextField name = new TextField();
         name.setPlaceholder("Veranstaltungsname");
         name.addClassName("form-field");
 
         ComboBox<String> lehrerBox = new ComboBox<>();
         lehrerBox.setPlaceholder("Lehrer");
-        List<String> lehrer = userRepository.findByRole(User.Role.TEACHER).stream()
-                .map(User::getUsername)
-                .toList();
-        lehrerBox.setItems(lehrer);
         lehrerBox.addClassName("form-field");
 
         DateTimePicker startzeit = new DateTimePicker();
         startzeit.addClassNames("form-field", "form-wide");
 
-        Button erstellen = new Button("Veranstaltung anlegen", e -> {
-            if (!name.isEmpty() && lehrerBox.getValue() != null && startzeit.getValue() != null) {
-                Veranstaltung v = new Veranstaltung(name.getValue(), lehrerBox.getValue(), startzeit.getValue());
-                veranstaltungsRepository.save(v);
-                refreshGrid();
-                name.clear();
-                startzeit.clear();
-                Notification.show("Veranstaltung angelegt");
-            } else {
-                Notification.show("Bitte alle Felder ausfüllen");
-            }
-        });
-        erstellen.setHeight("40px");
-        erstellen.addClassName("button");
+        Button erstellen = new Button("Veranstaltung anlegen");
 
         HorizontalLayout formularLayout = new HorizontalLayout(name, lehrerBox, startzeit, erstellen);
         formularLayout.setAlignItems(Alignment.BASELINE);
         formularLayout.setSpacing(true);
+        formularLayout.setVisible(false); // nur anzeigen, wenn ADMIN oder TEACHER
+
+        // === Sichtbarkeit + Verhalten je nach Rolle ===
+        if (currentUser != null && (currentUser.getRole() == User.Role.ADMIN || currentUser.getRole() == User.Role.TEACHER)) {
+            formularLayout.setVisible(true);
+
+            if (currentUser.getRole() == User.Role.ADMIN) {
+                List<String> lehrer = userRepository.findByRole(User.Role.TEACHER).stream()
+                        .map(User::getUsername)
+                        .toList();
+                lehrerBox.setItems(lehrer);
+            } else {
+                // Lehrer sehen nur sich selbst
+                lehrerBox.setItems(currentUser.getUsername());
+                lehrerBox.setValue(currentUser.getUsername());
+                lehrerBox.setReadOnly(true);
+            }
+
+            erstellen.addClickListener(e -> {
+                if (!name.isEmpty() && lehrerBox.getValue() != null && startzeit.getValue() != null) {
+                    Veranstaltung v = new Veranstaltung(name.getValue(), lehrerBox.getValue(), startzeit.getValue());
+                    veranstaltungsRepository.save(v);
+                    refreshGrid();
+                    name.clear();
+                    if (currentUser.getRole() == User.Role.ADMIN) {
+                        lehrerBox.clear();
+                    }
+                    startzeit.clear();
+                    Notification.show("Veranstaltung angelegt");
+                } else {
+                    Notification.show("Bitte alle Felder ausfüllen");
+                }
+            });
+        }
 
         // Grid konfigurieren
         veranstaltungenGrid.addColumn(Veranstaltung::getName).setHeader("Titel");
@@ -92,11 +112,21 @@ public class AdminVeranstaltungView extends VerticalLayout {
 
         refreshGrid();
 
-
         add(ueberschrift, formularLayout, veranstaltungenGrid);
     }
 
     private void refreshGrid() {
-        veranstaltungenGrid.setItems(veranstaltungsRepository.findAll());
+        if (currentUser.getRole() == User.Role.ADMIN) {
+            veranstaltungenGrid.setItems(veranstaltungsRepository.findAll());
+        } else if (currentUser.getRole() == User.Role.TEACHER) {
+            veranstaltungenGrid.setItems(veranstaltungsRepository.findByZugewieseneLehrerContaining(currentUser.getUsername()));
+        } else if (currentUser.getRole() == User.Role.STUDENT) {
+            veranstaltungenGrid.setItems(
+                    veranstaltungsRepository.findAll().stream()
+                            .filter(v -> v.getTeilnehmer().contains(currentUser.getUsername()))
+                            .toList()
+            );
+        }
     }
+
 }
