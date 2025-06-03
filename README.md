@@ -1,6 +1,13 @@
 # AnwesenheitsApp - Gruppe 3 (Vibecoder)
 
-Dieses Projekt ist Teil der Lehrveranstaltung **Software Engineering II** am Management Center Innsbruck.  Es handelt sich um eine AnwesenheitsApp für das MCI  zur Kontrolle der Anwesenheiten von Studenten bei Präsenzvorlesungen. 
+Dieses Projekt wurde im Rahmen der Lehrveranstaltung Software Engineering II am Management Center Innsbruck (MCI) im Sommersemester 2025 entwickelt.
+Ziel ist die Entwicklung einer Webanwendung zur digitalen Anwesenheitskontrolle bei Präsenzvorlesungen.
+
+## Funktion & Zielgruppe
+
+Die Anwendung ermöglicht es Studierenden, sich bei Lehrveranstaltungen mit einem Kennwort als anwesend zu registrieren.
+Lehrende und Administratoren verwalten Veranstaltungen und Teilnehmer:innen.
+Der Fokus liegt auf einer rollenbasierten Nutzerführung, einem einfachen UI und einer sicheren Datenhaltung.
 
 ## Voraussetzungen
 
@@ -22,15 +29,30 @@ Dieses Projekt ist Teil der Lehrveranstaltung **Software Engineering II** am Man
 
 ## Benutzerrollen
 
-- `ADMIN`: kann Benutzer verwalten
-- `STUDENT`: sieht eigene Daten
-- `TEACHER`: kann Schüler verwalten
+- `ADMIN`: Benutzer- und Veranstaltungsverwaltung
+- `STUDENT`: Veranstaltungen verwalten
+- `TEACHER`: Teilnahme über Kennwort
 
 ## Ordnerstruktur
 
 - `src/main/java`: Java-Code (Views, Services, Models)
 - `src/main/frontend`: Styles und UI-bezogene Dateien
 - `src/main/resources`: Bilder und statische Inhalte
+
+## Technologien
+
+Spring Boot 3.4.3 – Applikations-Framework
+Vaadin 24.7.1 – UI-Framework
+PostgreSQL – optionale Datenbank
+Spring Security – Zugriffsschutz
+iText – PDF-Export von Anwesenheitslisten
+Maven – Build Management
+
+## Hinweise zur Nutzung
+
+Es gibt keine automatische Benutzererstellung beim ersten Start – Benutzer müssen manuell über die Oberfläche erstellt werden.
+Die Anwendung speichert standardmäßig im Arbeitsspeicher (kein persistenter Speicher, außer mit PostgreSQL-Konfiguration).
+Der PDF-Export generiert Teilnehmerlisten pro Veranstaltung.
 
 ## Autoren
 
